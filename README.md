@@ -35,6 +35,12 @@ light weight replacement for native interop (JNI, JNA, etc.).
 
 - When developing pods, this library can be used to test them on the JVM.
 
+## Run tests
+
+```
+$ script/test
+```
+
 ## License
 
 Copyright © 2020 Michiel Borkent

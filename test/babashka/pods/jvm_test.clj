@@ -16,4 +16,4 @@
              [1 2 3 4 5 6 7 8 9]
              "Illegal arguments / {:args (1 2 3)}"] ret))
     (is (= "(\"hello\" \"print\" \"this\" \"debugging\" \"message\")\n" (str out)))
-    (is (= "WARNING: assoc already refers to: #'clojure.core/assoc in namespace: pod.test-pod, being replaced by: #'pod.test-pod/assoc\nWARNING: print already refers to: #'clojure.core/print in namespace: pod.test-pod, being replaced by: #'pod.test-pod/print\n(\"hello\" \"print\" \"this\" \"error\")\n" (str err)))))
+    (is (= "(\"hello\" \"print\" \"this\" \"error\")\n" (str err)))))
