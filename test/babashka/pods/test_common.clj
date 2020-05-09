@@ -5,7 +5,7 @@
 (require '[babashka.pods :as pods])
 (require '[clojure.core.async :as async])
 
-(pods/load-pod [\"clojure\" \"-A:test-pod\" \"--run-as-pod\"])
+(pods/load-pod [\"clojure\" \"-A:test-pod\"])
 (require '[pod.test-pod :as pod])
 (def stream-results (atom []))
 (let [chan (pod.test-pod/range-stream 1 10)]
