@@ -31,7 +31,7 @@ See [test/babashka/pods/sci_test.clj](test/babashka/pods/sci_test.clj).
 
 - Babashka pods allow you to leverage functionality from other programs
 regardless of the technology they were implemented in. As such, pods can be a
-light weight replacement for JNI.
+light weight replacement for native interop (JNI, JNA, etc.).
 
 - When developing pods, this library can be used to run tests for it on the JVM.
 
