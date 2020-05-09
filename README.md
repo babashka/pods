@@ -3,7 +3,13 @@
 A library to load babashka pods. Used by babashka but also usable from the JVM
 or other [sci](https://github.com/borkdude/sci)-based projects.
 
+More information about babashka pods can be found
+[here](https://github.com/borkdude/babashka/blob/master/doc/pods.md).
+
 ## Usage
+
+Using [pod-babashka-hsqldb](https://github.com/borkdude/pod-babashka-hsqldb) as
+an example pod.
 
 On the JVM:
 
