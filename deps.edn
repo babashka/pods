@@ -1,4 +1,17 @@
-{:deps {borkdude/sci {:mvn/version "0.0.13-alpha.19"}
-        nrepl/bencode {:mvn/version "1.1.0"}
+{:deps {nrepl/bencode {:mvn/version "1.1.0"}
         cheshire {:mvn/version "5.10.0"}
-        org.clojure/core.async {:mvn/version "1.1.587"}}}
+        org.clojure/core.async {:mvn/version "1.1.587"}}
+ :aliases
+ {:sci
+  {:extra-deps
+   {borkdude/sci {:mvn/version "0.0.13-alpha.19"}}}
+  :test
+  {:extra-deps
+   {test-runner
+    {:git/url "https://github.com/cognitect-labs/test-runner"
+     :sha "cb96e80f6f3d3b307c59cbeb49bb0dcb3a2a780b"}}
+   :extra-paths ["test"]
+   :main-opts ["-m" "cognitect.test-runner"]}
+  :test-pod
+  {:paths ["src" "test-pod"]
+   :main-opts ["-m" "pod.test-pod"]}}}

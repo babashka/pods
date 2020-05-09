@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+clj -A:test -n babashka.pods.jvm-test
+clj -A:sci:test -n babashka.pods.sci-test

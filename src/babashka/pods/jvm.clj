@@ -7,7 +7,7 @@
    (let [pod (impl/load-pod pod-spec _opts)
          namespaces (:namespaces pod)]
      (doseq [[ns-sym v] namespaces]
-       (create-ns ns-sym)
+       (load-string (format "(ns %s)" ns-sym))
        (doseq [[var-sym v] v]
          (intern ns-sym var-sym v)))
      (future (impl/processor pod)))))

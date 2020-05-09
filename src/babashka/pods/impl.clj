@@ -4,8 +4,7 @@
   (:require [bencode.core :as bencode]
             [cheshire.core :as cheshire]
             [clojure.core.async :as async]
-            [clojure.edn :as edn]
-            [sci.core :as sci]))
+            [clojure.edn :as edn]))
 
 (set! *warn-on-reflection* true)
 
@@ -32,6 +31,8 @@
   (let [stdout (:stdout pod)
         format (:format pod)
         chans (:chans pod)
+        out-stream (:out pod)
+        err-stream (:err pod)
         read-fn (case format
                   :edn edn/read-string
                   :json #(cheshire/parse-string-strict % true))]
@@ -66,13 +67,14 @@
                           bytes->string)]
           (when (or value* error?) (async/put! chan value))
           (when (or done? error?) (async/close! chan))
-          (when out (binding [*out* @sci/out]
-                      (println out)))
-          (when err (binding [*out* @sci/err]
+          (when out
+            (binding [*out* out-stream]
+              (println out)))
+          (when err (binding [*out* err-stream]
                       (println err))))
         (recur))
       (catch Exception e
-        (binding [*out* @sci/err]
+        (binding [*out* err-stream]
           (prn e))))))
 
 (defn next-id []
@@ -119,7 +121,9 @@
               :stdout stdout
               :chans (atom {})
               :format format
-              :ops ops}
+              :ops ops
+              :out *out*
+              :err *err*}
          _ (add-shutdown-hook!
             (fn []
               (if (contains? ops :shutdown)
