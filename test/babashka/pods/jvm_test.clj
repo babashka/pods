@@ -1,6 +1,5 @@
 (ns babashka.pods.jvm-test
   (:require [babashka.pods.test-common :refer [test-program]]
-            [clojure.string :as str]
             [clojure.test :refer [deftest is]]))
 
 (deftest jvm-test
@@ -9,7 +8,7 @@
         ret (binding [*out* out
                       *err* err]
               (try (load-string
-                    (str/replace test-program "babashka.pods" "babashka.pods.jvm"))
+                    test-program)
                    (catch Exception e (prn e))))]
 
     (is (= '[{:a 1, :b 2}

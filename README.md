@@ -14,7 +14,7 @@ an example pod.
 On the JVM:
 
 ``` clojure
-(require '[babashka.pods.jvm :as pods])
+(require '[babashka.pods :as pods])
 (pods/load-pod "pod-babashka-hsqldb")
 (require '[pod.babashka.hsqldb :as sql])
 
