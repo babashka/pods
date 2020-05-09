@@ -7,8 +7,8 @@
    (let [pod (impl/load-pod pod-spec _opts)
          namespaces (:namespaces pod)]
      (doseq [[ns-sym v] namespaces]
-       (load-string (format "(ns %s)" ns-sym))
+       (binding [*ns* (create-ns ns-sym)]
+         (dosync (commute @#'clojure.core/*loaded-libs* conj ns-sym)))
        (doseq [[var-sym v] v]
-         (ns-unmap ns-sym var-sym)
          (intern ns-sym var-sym v)))
      (future (impl/processor pod)))))
