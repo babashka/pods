@@ -112,5 +112,5 @@
               :shutdown (System/exit 0))))))))
 
 (defn -main [& args]
-  (when (= "true" (System/getenv "RUN_AS_BABASHKA_POD"))
+  (when (= "true" (System/getenv "BABASHKA_POD"))
     (run-pod (set args))))

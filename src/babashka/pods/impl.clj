@@ -107,7 +107,7 @@
          pb (ProcessBuilder. ^java.util.List pod-spec)
          _ (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT)
          _ (doto (.environment pb)
-             (.put "RUN_AS_BABASHKA_POD" "true"))
+             (.put "BABASHKA_POD" "true"))
          p (.start pb)
          stdin (.getOutputStream p)
          stdout (.getInputStream p)
