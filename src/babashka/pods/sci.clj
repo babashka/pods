@@ -13,5 +13,6 @@
              namespaces (:namespaces pod)
              env (:env ctx)]
          (swap! env update :namespaces merge namespaces)
-         (sci/future (impl/processor pod)))))
+         (sci/future (impl/processor pod))
+         nil)))
     {:sci.impl/op :needs-ctx}))

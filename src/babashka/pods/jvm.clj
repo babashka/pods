@@ -11,4 +11,5 @@
          (dosync (commute @#'clojure.core/*loaded-libs* conj ns-sym)))
        (doseq [[var-sym v] v]
          (intern ns-sym var-sym v)))
-     (future (impl/processor pod)))))
+     (future (impl/processor pod))
+     nil)))

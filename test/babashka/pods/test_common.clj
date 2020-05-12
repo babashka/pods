@@ -1,11 +1,10 @@
 (ns babashka.pods.test-common)
 
-(def test-program
-  "
+(def test-program "
 (require '[babashka.pods :as pods])
 (require '[clojure.core.async :as async])
 
-(pods/load-pod [\"clojure\" \"-A:test-pod\"])
+(prn (pods/load-pod [\"clojure\" \"-A:test-pod\"])) ;; should return nil
 (require '[pod.test-pod :as pod])
 (def stream-results (atom []))
 (let [chan (pod.test-pod/range-stream 1 10)]
