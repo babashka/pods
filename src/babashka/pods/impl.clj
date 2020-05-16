@@ -64,12 +64,20 @@
                             (ex-info message data))
                           value)
                   chan (get @chans id)
+                  promise? (instance? clojure.lang.IPending chan)
                   out (some-> (get reply "out")
                               bytes->string)
                   err (some-> (get reply "err")
                               bytes->string)]
-              (when (or value* error?) (async/put! chan value))
-              (when (or done? error?) (async/close! chan))
+              (when (or value* error?)
+                (if promise?
+                  (deliver chan value)
+                  (async/put! chan value)))
+              (when (or done? error?)
+                (if promise?
+                  (deliver chan nil) ;; some ops don't receive a value but are
+                                     ;; still done.
+                  (async/close! chan)))
               (when out
                 (binding [*out* out-stream]
                   (println out)))
@@ -91,14 +99,15 @@
                    :edn pr-str
                    :json cheshire/generate-string)
         id (next-id)
-        chan (async/chan)
+        chan (if async? (async/chan)
+                 (promise))
         _ (swap! chans assoc id chan)
         _ (write stream {"id" id
                          "op" "invoke"
                          "var" (str pod-var)
                          "args" (write-fn args)})]
     (if async? chan ;; TODO: https://blog.jakubholy.net/2019/core-async-error-handling/
-        (let [v (async/<!! chan)]
+        (let [v @chan]
           (if (instance? Throwable v)
             (throw v)
             v)))))

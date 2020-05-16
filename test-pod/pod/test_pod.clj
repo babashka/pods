@@ -56,7 +56,8 @@
                                               {"name" "assoc"}
                                               {"name" "error"}
                                               {"name" "print"}
-                                              {"name" "print-err"}]}]
+                                              {"name" "print-err"}
+                                              {"name" "return-nil"}]}]
                                     "ops" {"shutdown" {}}})
                             (recur))
               :invoke (let [var (-> (get message "var")
@@ -107,7 +108,12 @@
                                 "id" id})
                               (write
                                {"status" ["done"]
-                                "id" id})))
+                                "id" id}))
+                          pod.test-pod/return-nil
+                          (write
+                           {"status" ["done"]
+                            "id" id
+                            "value" "nil"}))
                         (recur))
               :shutdown (System/exit 0))))))))
 

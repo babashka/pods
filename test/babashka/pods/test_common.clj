@@ -21,4 +21,5 @@
 [(pod/assoc {:a 1} :b 2)
  (pod.test-pod/add-sync 1 2 3)
   @stream-results
-  ex-result]")
+  ex-result
+  (pod.test-pod/return-nil)]")
