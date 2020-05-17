@@ -1,8 +1,8 @@
 (ns babashka.pods.sci-test
   (:require [babashka.pods.sci :as pods]
-            [babashka.pods.test-common :refer [test-program]]
+            [babashka.pods.test-common :refer [test-program assertions]]
             [clojure.core.async :as async]
-            [clojure.test :refer [deftest is]]
+            [clojure.test :refer [deftest]]
             [sci.core :as sci]))
 
 (deftest sci-test
@@ -17,10 +17,4 @@
                              'clojure.core.async
                              {'<!! async/<!!}}}))]
 
-    (is (= '[{:a 1, :b 2}
-             6
-             [1 2 3 4 5 6 7 8 9]
-             "Illegal arguments / {:args (1 2 3)}"
-             nil] ret))
-    (is (= "nil\n(\"hello\" \"print\" \"this\" \"debugging\" \"message\")\n" (str out)))
-    (is (= "(\"hello\" \"print\" \"this\" \"error\")\n" (str err)))))
+    (assertions out err ret)))

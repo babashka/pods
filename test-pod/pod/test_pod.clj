@@ -45,21 +45,24 @@
                 op (read-string op)
                 op (keyword op)]
             (case op
-              :describe (do (write {"format" (if (= format :json)
-                                               "json"
-                                               "edn")
-                                    "namespaces"
-                                    [{"name" "pod.test-pod"
-                                      "vars" [{"name" "add-sync"}
-                                              {"name" "range-stream"
-                                               "async" "true"}
-                                              {"name" "assoc"}
-                                              {"name" "error"}
-                                              {"name" "print"}
-                                              {"name" "print-err"}
-                                              {"name" "return-nil"}]}]
-                                    "ops" {"shutdown" {}}})
-                            (recur))
+              :describe
+              (do (write {"format" (if (= format :json)
+                                     "json"
+                                     "edn")
+                          "namespaces"
+                          [{"name" "pod.test-pod"
+                            "vars" [{"name" "add-sync"}
+                                    {"name" "range-stream"
+                                     "async" "true"}
+                                    {"name" "assoc"}
+                                    {"name" "error"}
+                                    {"name" "print"}
+                                    {"name" "print-err"}
+                                    {"name" "return-nil"}
+                                    {"name" "do-twice"
+                                     "code" "(defmacro do-twice [x] `(do ~x ~x))"}]}]
+                          "ops" {"shutdown" {}}})
+                  (recur))
               :invoke (let [var (-> (get message "var")
                                     read-string
                                     symbol)

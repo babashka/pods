@@ -27,6 +27,10 @@
   (-> (get m k)
       bytes->string))
 
+(defn get-maybe-string [m k]
+  (some-> (get m k)
+          bytes->string))
+
 (defn processor [pod]
   (let [stdout (:stdout pod)
         format (:format pod)
@@ -154,10 +158,13 @@
                                            bytes->string
                                            #(Boolean/parseBoolean %))
                             name-sym (symbol name)
-                            sym (symbol ns-name-str name)]
-                        (assoc m name-sym (fn [& args]
-                                            (let [res (invoke pod sym args async?)]
-                                              res)))))
+                            sym (symbol ns-name-str name)
+                            code (get-maybe-string var "code")]
+                        (assoc m name-sym
+                               (or code
+                                   (fn [& args]
+                                     (let [res (invoke pod sym args async?)]
+                                       res))))))
                     {}
                     vars))
          pod-namespaces (reduce (fn [namespaces namespace]

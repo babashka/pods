@@ -1,6 +1,6 @@
 (ns babashka.pods.jvm-test
-  (:require [babashka.pods.test-common :refer [test-program]]
-            [clojure.test :refer [deftest is]]))
+  (:require [babashka.pods.test-common :refer [test-program assertions]]
+            [clojure.test :refer [deftest]]))
 
 (deftest jvm-test
   (let [out (java.io.StringWriter.)
@@ -11,10 +11,4 @@
                     test-program)
                    (catch Exception e (prn e))))]
 
-    (is (= '[{:a 1, :b 2}
-             6
-             [1 2 3 4 5 6 7 8 9]
-             "Illegal arguments / {:args (1 2 3)}"
-             nil] ret))
-    (is (= "nil\n(\"hello\" \"print\" \"this\" \"debugging\" \"message\")\n" (str out)))
-    (is (= "(\"hello\" \"print\" \"this\" \"error\")\n" (str err)))))
+    (assertions out err ret)))

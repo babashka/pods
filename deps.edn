@@ -4,7 +4,7 @@
  :aliases
  {:sci
   {:extra-deps
-   {borkdude/sci {:mvn/version "0.0.13-alpha.19"}}}
+   {borkdude/sci {:mvn/version "0.0.13-alpha.22"}}}
   :test
   {:extra-deps
    {test-runner

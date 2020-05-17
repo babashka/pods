@@ -1,4 +1,5 @@
-(ns babashka.pods.test-common)
+(ns babashka.pods.test-common
+  (:require [clojure.test :refer [is]]))
 
 (def test-program "
 (require '[babashka.pods :as pods])
@@ -18,8 +19,18 @@
       (str (ex-message e) \" / \" (ex-data e)))))
 (pod.test-pod/print \"hello\" \"print\" \"this\" \"debugging\" \"message\")
 (pod.test-pod/print-err \"hello\" \"print\" \"this\" \"error\")
+(pod/do-twice (prn :foo))
 [(pod/assoc {:a 1} :b 2)
  (pod.test-pod/add-sync 1 2 3)
   @stream-results
   ex-result
   (pod.test-pod/return-nil)]")
+
+(defn assertions [out err ret]
+  (is (= '[{:a 1, :b 2}
+           6
+           [1 2 3 4 5 6 7 8 9]
+           "Illegal arguments / {:args (1 2 3)}"
+           nil] ret))
+  (is (= "nil\n(\"hello\" \"print\" \"this\" \"debugging\" \"message\")\n:foo\n:foo\n" (str out)))
+  (is (= "(\"hello\" \"print\" \"this\" \"error\")\n" (str err))))
