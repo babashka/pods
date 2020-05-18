@@ -69,6 +69,7 @@
                           value)
                   chan (get @chans id)
                   promise? (instance? clojure.lang.IPending chan)
+                  channel? (instance? clojure.core.async.impl.channels.ManyToManyChannel chan)
                   on-success (:on-success chan)
                   on-error (:on-error chan)
                   out (some-> (get reply "out")
@@ -83,13 +84,14 @@
                                    :done done?})
                       (and error? on-error)
                       (on-error {:error value})
-                      :else
+                      channel?
                       (async/put! chan value)))
               (when (or done? error?)
                 (if promise?
                   (deliver chan nil) ;; some ops don't receive a value but are
                   ;; still done.
-                  (async/close! chan)))
+                  (when channel?
+                    (async/close! chan))))
               (when out
                 (binding [*out* out-stream]
                   (println out)))
@@ -115,8 +117,9 @@
                    :json cheshire/generate-string)
         id (next-id)
         chan (cond async (async/chan)
-                   on-success {:on-success on-success
-                               :on-error on-error}
+                   (or on-success
+                       on-error) {:on-success on-success
+                                  :on-error on-error}
                    :else (promise))
         _ (swap! chans assoc id chan)
         _ (write stream {"id" id
@@ -125,7 +128,7 @@
                          "args" (write-fn args)})]
     ;; see: https://blog.jakubholy.net/2019/core-async-error-handling/
     (cond async chan
-          on-success nil
+          (or on-success on-error) nil
           :else (let [v @chan]
                   (if (instance? Throwable v)
                     (throw v)

@@ -13,8 +13,8 @@
               (sci/eval-string
                test-program
                {:namespaces {'babashka.pods
-                             {'load-pod pods/load-pod}
+                             {'load-pod pods/load-pod
+                              'invoke pods/invoke}
                              'clojure.core.async
                              {'<!! async/<!!}}}))]
-
     (assertions out err ret)))
