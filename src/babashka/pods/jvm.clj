@@ -18,3 +18,6 @@
              (load-string v)))))
      (future (impl/processor pod))
      nil)))
+
+(defn invoke [pod-id sym args opts]
+  (impl/invoke-public pod-id sym args opts))
