@@ -331,14 +331,14 @@ as client side code. An example from the
 (defn watch
   ([path cb] (watch path cb {}))
   ([path cb opts]
-    (:result
-      (babashka.pods/invoke "pod.babashka.filewatcher"
-        'pod.babashka.filewatcher/watch*
-        [path opts]
-        {:on-success (fn [{:keys [:value :done]}] (cb value))
-         :on-error (fn [{:keys [:ex-message :ex-data]}]
-                     (binding [*out* *err*]
-                       (println "ERROR:" ex-message)))}))))
+    (babashka.pods/invoke "pod.babashka.filewatcher"
+      'pod.babashka.filewatcher/watch*
+      [path opts]
+      {:on-success (fn [{:keys [:value :done]}] (cb value))
+       :on-error (fn [{:keys [:ex-message :ex-data]}]
+                   (binding [*out* *err*]
+                     (println "ERROR:" ex-message)))})
+    nil))
 ```
 
 The wrapper function will then invoke `babashka.pods/invoke`, a lower level
