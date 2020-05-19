@@ -338,7 +338,7 @@ as client side code. An example from the
         {:on-success (fn [{:keys [:value :done]}] (cb value))
          :on-error (fn [{:keys [:ex-message :ex-data]}]
                      (binding [*out* *err*]
-                       (prn ex-message)))}))))
+                       (println "ERROR:" ex-message)))}))))
 ```
 
 The wrapper function will then invoke `babashka.pods/invoke`, a lower level
@@ -346,7 +346,7 @@ function to invoke a pod var with callbacks.
 
 The arguments to `babashka.pods/invoke` are:
 
-- a pod identifier string, either explicitly set as `pod-id"` in `describe`, or
+- a pod identifier string, either explicitly set as `pod-id` in `describe`, or
   derived from the first described namespace.
 - the symbol of the var to invoke
 - the arguments to the var
