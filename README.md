@@ -352,6 +352,10 @@ The arguments to `babashka.pods/invoke` are:
 - the arguments to the var
 - an opts map containing `:on-success` and `:on-error` callbacks.
 
+The return value of `babashka.pods/invoke` is a map containing `:result`. When
+not using callbacks, this is the return value from the pod var invocation. When
+using callbacks, this value is undefined.
+
 The callback `:on-success` is called with a map containing:
 
 - `:value`: a return value from the pod var
