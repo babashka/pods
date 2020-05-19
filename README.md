@@ -375,7 +375,7 @@ In the above example the wrapper function calls the pod identified by
 `"pod.babashka.filewatcher"`. It calls the var
 `pod.babashka.filewatcher/watch*`. In `:on-success` it pulls out received
 values, passing them to the user-provided callback. Additionally, it prints any
-errors received from the pod library in `:on-error` to `*err*`
+errors received from the pod library in `:on-error` to `*err*`.
 
 A user will then use `pod.babashka.filewatcher/watch` like this:
 
