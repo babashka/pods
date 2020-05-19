@@ -57,19 +57,19 @@
                   status (set (map (comp keyword bytes->string) status))
                   done? (contains? status :done)
                   error? (contains? status :error)
-                  value (if error?
-                          (let [message (or (some-> (get reply "ex-message")
-                                                    bytes->string)
-                                            "")
-                                data (or (some-> (get reply "ex-data")
-                                                 bytes->string
-                                                 read-fn)
-                                         {})]
-                            (ex-info message data))
-                          value)
+                  [ex-message ex-data]
+                  (when error?
+                    [(or (some-> (get reply "ex-message")
+                                 bytes->string)
+                         "")
+                     (or (some-> (get reply "ex-data")
+                                 bytes->string
+                                 read-fn)
+                         {})])
                   chan (get @chans id)
                   promise? (instance? clojure.lang.IPending chan)
-                  channel? (instance? clojure.core.async.impl.channels.ManyToManyChannel chan)
+                  exception (when (and promise? error?)
+                              (ex-info ex-message ex-data))
                   on-success (:on-success chan)
                   on-error (:on-error chan)
                   out (some-> (get reply "out")
@@ -78,20 +78,15 @@
                               bytes->string)]
               (when (or value* error?)
                 (cond promise?
-                      (deliver chan value)
+                      (deliver chan (if error? exception value))
                       (and (not error?) on-success)
                       (on-success {:value value
                                    :done done?})
                       (and error? on-error)
-                      (on-error {:error value})
-                      channel?
-                      (async/put! chan value)))
-              (when (or done? error?)
-                (if promise?
-                  (deliver chan nil) ;; some ops don't receive a value but are
-                  ;; still done.
-                  (when channel?
-                    (async/close! chan))))
+                      (on-error {:ex-message ex-message
+                                 :ex-data ex-data})))
+              (when (and (or done? error?) promise?)
+                (deliver chan nil))
               (when out
                 (binding [*out* out-stream]
                   (println out)))
