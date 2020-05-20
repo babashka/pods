@@ -335,11 +335,10 @@ as client side code. An example from the
     "pod.babashka.filewatcher"
     'pod.babashka.filewatcher/watch*
     [path opts]
-    {:handlers {:success cb
+    {:handlers {:success (fn [event] (cb (update event :type keyword)))
                 :error (fn [{:keys [:ex-message :ex-data]}]
                          (binding [*out* *err*]
-                           (println "ERROR:" ex-message)))
-                :done (fn [])}})
+                           (println "ERROR:" ex-message)))}})
    nil))
 ```
 
