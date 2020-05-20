@@ -1,5 +1,5 @@
 (require '[babashka.pods :as pods])
-(def pod-id (pods/load-pod ["clojure" "-A:test-pod"]))
+(def pod-id (:pod/id (pods/load-pod ["clojure" "-A:test-pod"])))
 (require '[pod.test-pod :as pod])
 (def pod-ns-name (ns-name (find-ns 'pod.test-pod)))
 

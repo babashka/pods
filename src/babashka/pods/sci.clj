@@ -24,7 +24,7 @@
                      (string? var-value)
                      (sci/eval-string* ctx var-value)))))
          (sci/future (impl/processor pod))
-         (:pod-id pod))))
+         {:pod/id (:pod-id pod)})))
     {:sci.impl/op :needs-ctx}))
 
 (defn unload-pod
