@@ -362,7 +362,8 @@ The callback `:success` is called with a map containing:
 
 - `:value`: a return value from the pod var
 
-The callback `:error` is called with a map containing:
+The callback `:error` is called in case the pod sends an error, a map
+containing:
 
 - `:ex-message`: an error message
 - `:ex-data`: an arbitrary additional error data map. Typically it will contain
@@ -371,9 +372,9 @@ The callback `:error` is called with a map containing:
 If desired, `:ex-message` and `:ex-data` can be reified into a
 `java.lang.Exception` using `ex-info`.
 
-The callback `:done` is called with one argument which is currently
-undefined. This callback can be used to determine if the pod is done sending
-values.
+The callback `:done` is called with one argument, a map. This callback can be
+used to determine if the pod is done sending values, in case it wants to send
+multiple. The callback is only called if no errors were sent by the pod.
 
 In the above example the wrapper function calls the pod identified by
 `"pod.babashka.filewatcher"`. It calls the var

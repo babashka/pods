@@ -1,7 +1,6 @@
 (ns babashka.pods.sci-test
   (:require [babashka.pods.sci :as pods]
             [babashka.pods.test-common :refer [test-program assertions]]
-            [clojure.core.async :as async]
             [clojure.test :refer [deftest]]
             [sci.core :as sci]))
 
@@ -14,7 +13,5 @@
                test-program
                {:namespaces {'babashka.pods
                              {'load-pod pods/load-pod
-                              'invoke pods/invoke}
-                             'clojure.core.async
-                             {'<!! async/<!!}}}))]
+                              'invoke pods/invoke}}}))]
     (assertions out err ret)))

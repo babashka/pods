@@ -3,7 +3,6 @@
   (:refer-clojure :exclude [read])
   (:require [bencode.core :as bencode]
             [cheshire.core :as cheshire]
-            [clojure.core.async :as async]
             [clojure.edn :as edn]))
 
 (set! *warn-on-reflection* true)
@@ -86,7 +85,7 @@
                       (and error? error-handler)
                       (error-handler {:ex-message ex-message
                                       :ex-data ex-data})))
-              (when done?
+              (when (and done? (not error?))
                 (when promise?
                   (deliver chan nil))
                 (when done-handler
