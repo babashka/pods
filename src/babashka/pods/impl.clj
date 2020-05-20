@@ -119,8 +119,7 @@
                          "op" "invoke"
                          "var" (str pod-var)
                          "args" (write-fn args)})]
-    ;; see: https://blog.jakubholy.net/2019/core-async-error-handling/
-    (cond handlers handlers
+    (cond handlers nil
           :else (let [v @chan]
                   (if (instance? Throwable v)
                     (throw v)
@@ -142,6 +141,12 @@
     (when-let [rns (:remove-ns pod)]
       (doseq [[ns-name _] (:namespaces pod)]
         (rns ns-name)))))
+
+(def next-pod-id
+  (let [counter (atom 0)]
+    (fn []
+      (let [[o _] (swap-vals! counter inc)]
+        o))))
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
@@ -207,8 +212,7 @@
 
 (defn invoke-public [pod-id fn-sym args opts]
   (let [pod (lookup-pod pod-id)]
-    (invoke pod fn-sym args opts)
-    nil))
+    (invoke pod fn-sym args opts)))
 
 (defn unload-pod [pod-id]
   (destroy pod-id))

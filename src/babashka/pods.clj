@@ -9,5 +9,6 @@
   ([pod-id] (unload-pod pod-id {}))
   ([pod-id opts] (jvm/unload-pod pod-id opts)))
 
-(defn invoke [pod-id sym args opts]
-  (jvm/invoke pod-id sym args opts))
+(defn invoke
+  ([pod-id sym args] (invoke pod-id sym args {}))
+  ([pod-id sym args opts] (jvm/invoke pod-id sym args opts)))

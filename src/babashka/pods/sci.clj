@@ -32,5 +32,6 @@
   ([pod-id _opts]
    (impl/unload-pod pod-id)))
 
-(defn invoke [pod-id sym args opts]
-  (impl/invoke-public pod-id sym args opts))
+(defn invoke
+  ([pod-id sym args] (invoke pod-id sym args {}))
+  ([pod-id sym args opts] (impl/invoke-public pod-id sym args opts)))

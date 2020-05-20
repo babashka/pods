@@ -23,13 +23,16 @@
 (pod/do-twice (prn :foo))
 
 (def callback-result (promise))
-(pods/invoke "pod.test-pod" 'pod.test-pod/add-sync [1 2]
+(pods/invoke pod-id 'pod.test-pod/add-sync [1 2]
              {:handlers {:success
                          (fn [value]
                            (deliver callback-result value))}})
 
+(def sync-invoke
+  (pods/invoke pod-id 'pod.test-pod/add-sync [1 2]))
+
 (def error-result (promise))
-(pods/invoke "pod.test-pod" 'pod.test-pod/add-sync ["1" 2]
+(pods/invoke pod-id 'pod.test-pod/add-sync ["1" 2]
              {:handlers
               {:error (fn [m]
                         (deliver error-result m))}})
@@ -45,6 +48,7 @@
  pod-ns-name
  assoc-result
  add-result
+ sync-invoke
  @stream-results
  ex-result
  nil-result
