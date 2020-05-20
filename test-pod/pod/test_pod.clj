@@ -73,10 +73,18 @@
                             args (read-string args)
                             args (read-fn args)]
                         (case var
-                          pod.test-pod/add-sync (write
-                                                 {"value" (write-fn (apply + args))
-                                                  "id" id
-                                                  "status" ["done"]})
+                          pod.test-pod/add-sync
+                          (try (let [ret (apply + args)]
+                                 (write
+                                  {"value" (write-fn ret)
+                                   "id" id
+                                   "status" ["done"]}))
+                               (catch Exception e
+                                 (write
+                                  {"ex-data" (write-fn {:args args})
+                                   "ex-message" (.getMessage e)
+                                   "status" ["done" "error"]
+                                   "id" id})))
                           pod.test-pod/range-stream
                           (let [rng (apply range args)]
                             (doseq [v rng]

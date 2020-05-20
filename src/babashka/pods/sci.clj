@@ -23,3 +23,6 @@
          (sci/future (impl/processor pod))
          nil)))
     {:sci.impl/op :needs-ctx}))
+
+(defn invoke [pod-id sym args opts]
+  (impl/invoke-public pod-id sym args opts))

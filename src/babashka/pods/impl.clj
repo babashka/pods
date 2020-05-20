@@ -57,31 +57,36 @@
                   status (set (map (comp keyword bytes->string) status))
                   done? (contains? status :done)
                   error? (contains? status :error)
-                  value (if error?
-                          (let [message (or (some-> (get reply "ex-message")
-                                                    bytes->string)
-                                            "")
-                                data (or (some-> (get reply "ex-data")
-                                                 bytes->string
-                                                 read-fn)
-                                         {})]
-                            (ex-info message data))
-                          value)
+                  [ex-message ex-data]
+                  (when error?
+                    [(or (some-> (get reply "ex-message")
+                                 bytes->string)
+                         "")
+                     (or (some-> (get reply "ex-data")
+                                 bytes->string
+                                 read-fn)
+                         {})])
                   chan (get @chans id)
                   promise? (instance? clojure.lang.IPending chan)
+                  exception (when (and promise? error?)
+                              (ex-info ex-message ex-data))
+                  on-success (:on-success chan)
+                  on-error (:on-error chan)
                   out (some-> (get reply "out")
                               bytes->string)
                   err (some-> (get reply "err")
                               bytes->string)]
               (when (or value* error?)
-                (if promise?
-                  (deliver chan value)
-                  (async/put! chan value)))
-              (when (or done? error?)
-                (if promise?
-                  (deliver chan nil) ;; some ops don't receive a value but are
-                                     ;; still done.
-                  (async/close! chan)))
+                (cond promise?
+                      (deliver chan (if error? exception value))
+                      (and (not error?) on-success)
+                      (on-success {:value value
+                                   :done done?})
+                      (and error? on-error)
+                      (on-error {:ex-message ex-message
+                                 :ex-data ex-data})))
+              (when (and (or done? error?) promise?)
+                (deliver chan nil))
               (when out
                 (binding [*out* out-stream]
                   (println out)))
@@ -95,7 +100,10 @@
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
 
-(defn invoke [pod pod-var args async?]
+(defn invoke [pod pod-var args
+              {:keys [:on-success
+                      :on-error
+                      :async]}]
   (let [stream (:stdin pod)
         format (:format pod)
         chans (:chans pod)
@@ -103,18 +111,25 @@
                    :edn pr-str
                    :json cheshire/generate-string)
         id (next-id)
-        chan (if async? (async/chan)
-                 (promise))
+        chan (cond async (async/chan)
+                   (or on-success
+                       on-error) {:on-success on-success
+                                  :on-error on-error}
+                   :else (promise))
         _ (swap! chans assoc id chan)
         _ (write stream {"id" id
                          "op" "invoke"
                          "var" (str pod-var)
                          "args" (write-fn args)})]
-    (if async? chan ;; TODO: https://blog.jakubholy.net/2019/core-async-error-handling/
-        (let [v @chan]
-          (if (instance? Throwable v)
-            (throw v)
-            v)))))
+    ;; see: https://blog.jakubholy.net/2019/core-async-error-handling/
+    (cond async chan
+          (or on-success on-error) nil
+          :else (let [v @chan]
+                  (if (instance? Throwable v)
+                    (throw v)
+                    v)))))
+
+(def pods (atom {}))
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
@@ -133,6 +148,7 @@
          reply (read stdout)
          format (-> (get reply "format") bytes->string keyword)
          ops (some->> (get reply "ops") keys (map keyword) set)
+         pod-id (get-maybe-string reply "pod-id")
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
@@ -150,6 +166,9 @@
                     (.waitFor p))
                 (.destroy p))))
          pod-namespaces (get reply "namespaces")
+         pod-id (or pod-id (when-let [ns (first pod-namespaces)]
+                             (get-string ns "name")))
+         pod (assoc pod :pod-id pod-id)
          vars-fn (fn [ns-name-str vars]
                    (reduce
                     (fn [m var]
@@ -163,7 +182,7 @@
                         (assoc m name-sym
                                (or code
                                    (fn [& args]
-                                     (let [res (invoke pod sym args async?)]
+                                     (let [res (invoke pod sym args {:async async?})]
                                        res))))))
                     {}
                     vars))
@@ -174,5 +193,14 @@
                                         vars (vars-fn name-str vars)]
                                     (assoc namespaces name-sym vars)))
                                 {}
-                                pod-namespaces)]
-     (assoc pod :namespaces pod-namespaces))))
+                                pod-namespaces)
+         pod (assoc pod :namespaces pod-namespaces)]
+     (swap! pods assoc pod-id pod)
+     pod)))
+
+(defn lookup-pod [pod-id]
+  (get @pods pod-id))
+
+(defn invoke-public [pod-id fn-sym args opts]
+  (let [pod (lookup-pod pod-id)]
+    {:result (invoke pod fn-sym args opts)}))
