@@ -81,7 +81,7 @@
                 (cond promise?
                       (deliver chan (if error? exception value))
                       (and (not error?) success-handler)
-                      (success-handler {:value value})
+                      (success-handler value)
                       (and error? error-handler)
                       (error-handler {:ex-message ex-message
                                       :ex-data ex-data})))
@@ -89,7 +89,7 @@
                 (when promise?
                   (deliver chan nil))
                 (when done-handler
-                  (done-handler {})))
+                  (done-handler)))
               (when out
                 (binding [*out* out-stream]
                   (println out)))

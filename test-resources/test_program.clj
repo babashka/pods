@@ -5,9 +5,9 @@
 (def stream-results (atom []))
 (def done-prom (promise))
 (pods/invoke "pod.test-pod" 'pod.test-pod/range-stream [1 10]
-             {:handlers {:success (fn [{:keys [:value]}]
+             {:handlers {:success (fn [value]
                                     (swap! stream-results conj value))
-                         :done (fn [_]
+                         :done (fn []
                                  (deliver done-prom :ok))}})
 @done-prom
 
@@ -24,7 +24,7 @@
 (def callback-result (promise))
 (pods/invoke "pod.test-pod" 'pod.test-pod/add-sync [1 2]
              {:handlers {:success
-                         (fn [{:keys [:value]}]
+                         (fn [value]
                            (deliver callback-result value))}})
 
 (def error-result (promise))

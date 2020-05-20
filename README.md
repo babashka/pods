@@ -335,11 +335,11 @@ as client side code. An example from the
     "pod.babashka.filewatcher"
     'pod.babashka.filewatcher/watch*
     [path opts]
-    {:handlers {:success (fn [{:keys [:value]}] (cb value))
+    {:handlers {:success cb
                 :error (fn [{:keys [:ex-message :ex-data]}]
                          (binding [*out* *err*]
                            (println "ERROR:" ex-message)))
-                :done (fn [_])}})
+                :done (fn [])}})
    nil))
 ```
 
@@ -358,9 +358,9 @@ The return value of `babashka.pods/invoke` is a map containing `:result`. When
 not using callbacks, this is the return value from the pod var invocation. When
 using callbacks, this value is undefined.
 
-The callback `:success` is called with a map containing:
-
-- `:value`: a return value from the pod var
+The callback `:success` is called with a map containing a return value from the
+pod invocation. The pod can potentially return multiple values. The callback
+will be called with every value individually.
 
 The callback `:error` is called in case the pod sends an error, a map
 containing:
@@ -372,9 +372,9 @@ containing:
 If desired, `:ex-message` and `:ex-data` can be reified into a
 `java.lang.Exception` using `ex-info`.
 
-The callback `:done` is called with one argument, a map. This callback can be
-used to determine if the pod is done sending values, in case it wants to send
-multiple. The callback is only called if no errors were sent by the pod.
+The callback `:done` is a 0-arg function. This callback can be used to determine
+if the pod is done sending values, in case it wants to send multiple. The
+callback is only called if no errors were sent by the pod.
 
 In the above example the wrapper function calls the pod identified by
 `"pod.babashka.filewatcher"`. It calls the var
