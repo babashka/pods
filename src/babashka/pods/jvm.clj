@@ -17,7 +17,7 @@
              (string? v)
              (load-string v)))))
      (future (impl/processor pod))
-     {:pod-id (:pod-id pod)})))
+     (:pod-id pod))))
 
 (defn unload-pod
   ([pod-id] (unload-pod pod-id {}))

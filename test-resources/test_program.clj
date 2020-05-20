@@ -1,6 +1,7 @@
 (require '[babashka.pods :as pods])
-(def pod-id (:pod-id (pods/load-pod ["clojure" "-A:test-pod"])))
+(def pod-id (pods/load-pod ["clojure" "-A:test-pod"]))
 (require '[pod.test-pod :as pod])
+(def pod-ns-name (ns-name (find-ns 'pod.test-pod)))
 
 (def stream-results (atom []))
 (def done-prom (promise))
@@ -33,15 +34,21 @@
               {:error (fn [m]
                         (deliver error-result m))}})
 
-#_(pods/unload-pod pod-id)
-#_(prn (find-ns 'pod.test-pod))
+(def assoc-result (pod/assoc {:a 1} :b 2))
+(def add-result (pod.test-pod/add-sync 1 2 3))
+(def nil-result (pod.test-pod/return-nil))
+
+(pods/unload-pod pod-id)
+(def successfully-removed (nil? (find-ns 'pod.test-pod)))
 
 [pod-id
- (pod/assoc {:a 1} :b 2)
- (pod.test-pod/add-sync 1 2 3)
+ pod-ns-name
+ assoc-result
+ add-result
  @stream-results
  ex-result
- (pod.test-pod/return-nil)
+ nil-result
  @callback-result
  (:ex-message @error-result)
- (:ex-data @error-result)]
+ (:ex-data @error-result)
+ successfully-removed]

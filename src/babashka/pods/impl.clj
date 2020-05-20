@@ -128,6 +128,21 @@
 
 (def pods (atom {}))
 
+(defn lookup-pod [pod-id]
+  (get @pods pod-id))
+
+(defn destroy [pod-id]
+  (when-let [pod (lookup-pod pod-id)]
+    (if (contains? (:ops pod) :shutdown)
+      (do (write (:stdin pod)
+                 {"op" "shutdown"
+                  "id" (next-id)})
+          (.waitFor ^Process (:process pod)))
+      (.destroy ^Process (:process pod)))
+    (when-let [rns (:remove-ns pod)]
+      (doseq [[ns-name _] (:namespaces pod)]
+        (rns ns-name)))))
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec {:keys [:remove-ns]}]
@@ -146,15 +161,6 @@
          format (-> (get reply "format") bytes->string keyword)
          ops (some->> (get reply "ops") keys (map keyword) set)
          pod-id (get-maybe-string reply "pod-id")
-         destroy (fn [pod]
-                   (if (contains? (:ops pod) :shutdown)
-                     (do (write stdin {"op" "shutdown"
-                                       "id" (next-id)})
-                         (.waitFor p))
-                     (.destroy p))
-                   (when-let [rns remove-ns]
-                     (doseq [[ns-name _] (:namespaces pod)]
-                       (rns ns-name))))
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
@@ -164,7 +170,7 @@
               :ops ops
               :out *out*
               :err *err*
-              :destroy destroy}
+              :remove-ns remove-ns}
          _ (add-shutdown-hook! #(destroy pod))
          pod-namespaces (get reply "namespaces")
          pod-id (or pod-id (when-let [ns (first pod-namespaces)]
@@ -199,14 +205,10 @@
      (swap! pods assoc pod-id pod)
      pod)))
 
-(defn lookup-pod [pod-id]
-  (get @pods pod-id))
-
 (defn invoke-public [pod-id fn-sym args opts]
   (let [pod (lookup-pod pod-id)]
     (invoke pod fn-sym args opts)
     nil))
 
 (defn unload-pod [pod-id]
-  (when-let [pod (lookup-pod pod-id)]
-    ))
+  (destroy pod-id))
