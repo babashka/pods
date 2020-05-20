@@ -1,5 +1,5 @@
 (require '[babashka.pods :as pods])
-(prn (pods/load-pod ["clojure" "-A:test-pod"])) ;; should return nil
+(def pod-id (:pod-id (pods/load-pod ["clojure" "-A:test-pod"])))
 (require '[pod.test-pod :as pod])
 
 (def stream-results (atom []))
@@ -33,7 +33,11 @@
               {:error (fn [m]
                         (deliver error-result m))}})
 
-[(pod/assoc {:a 1} :b 2)
+#_(pods/unload-pod pod-id)
+#_(prn (find-ns 'pod.test-pod))
+
+[pod-id
+ (pod/assoc {:a 1} :b 2)
  (pod.test-pod/add-sync 1 2 3)
  @stream-results
  ex-result
