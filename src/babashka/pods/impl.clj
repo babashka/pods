@@ -72,7 +72,7 @@
                   {error-handler :error
                    done-handler :done
                    success-handler :success} (when (map? chan)
-                                                    chan)
+                                               chan)
                   out (some-> (get reply "out")
                               bytes->string)
                   err (some-> (get reply "err")
@@ -128,9 +128,24 @@
 
 (def pods (atom {}))
 
+(defn lookup-pod [pod-id]
+  (get @pods pod-id))
+
+(defn destroy [pod-id]
+  (when-let [pod (lookup-pod pod-id)]
+    (if (contains? (:ops pod) :shutdown)
+      (do (write (:stdin pod)
+                 {"op" "shutdown"
+                  "id" (next-id)})
+          (.waitFor ^Process (:process pod)))
+      (.destroy ^Process (:process pod)))
+    (when-let [rns (:remove-ns pod)]
+      (doseq [[ns-name _] (:namespaces pod)]
+        (rns ns-name)))))
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec _opts]
+  ([pod-spec {:keys [:remove-ns]}]
    (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
          _ (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT)
@@ -154,14 +169,9 @@
               :format format
               :ops ops
               :out *out*
-              :err *err*}
-         _ (add-shutdown-hook!
-            (fn []
-              (if (contains? ops :shutdown)
-                (do (write stdin {"op" "shutdown"
-                                  "id" (next-id)})
-                    (.waitFor p))
-                (.destroy p))))
+              :err *err*
+              :remove-ns remove-ns}
+         _ (add-shutdown-hook! #(destroy pod))
          pod-namespaces (get reply "namespaces")
          pod-id (or pod-id (when-let [ns (first pod-namespaces)]
                              (get-string ns "name")))
@@ -195,9 +205,10 @@
      (swap! pods assoc pod-id pod)
      pod)))
 
-(defn lookup-pod [pod-id]
-  (get @pods pod-id))
-
 (defn invoke-public [pod-id fn-sym args opts]
   (let [pod (lookup-pod pod-id)]
-    {:result (invoke pod fn-sym args opts)}))
+    (invoke pod fn-sym args opts)
+    nil))
+
+(defn unload-pod [pod-id]
+  (destroy pod-id))

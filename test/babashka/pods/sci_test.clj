@@ -13,5 +13,6 @@
                test-program
                {:namespaces {'babashka.pods
                              {'load-pod pods/load-pod
-                              'invoke pods/invoke}}}))]
+                              'invoke pods/invoke
+                              'unload-pod pods/unload-pod}}}))]
     (assertions out err ret)))

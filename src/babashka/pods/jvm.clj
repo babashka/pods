@@ -4,7 +4,7 @@
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec _opts]
-   (let [pod (impl/load-pod pod-spec _opts)
+   (let [pod (impl/load-pod pod-spec {:remove-ns remove-ns})
          namespaces (:namespaces pod)]
      (doseq [[ns-sym v] namespaces]
        (binding [*ns* (load-string (format "(ns %s) *ns*" ns-sym))]
@@ -17,7 +17,12 @@
              (string? v)
              (load-string v)))))
      (future (impl/processor pod))
-     nil)))
+     (:pod-id pod))))
+
+(defn unload-pod
+  ([pod-id] (unload-pod pod-id {}))
+  ([pod-id _opts]
+   (impl/unload-pod pod-id)))
 
 (defn invoke [pod-id sym args opts]
   (impl/invoke-public pod-id sym args opts))
