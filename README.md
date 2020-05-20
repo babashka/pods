@@ -348,8 +348,7 @@ function to invoke a pod var with callbacks.
 
 The arguments to `babashka.pods/invoke` are:
 
-- a pod identifier string, either explicitly set as `pod-id` in `describe`, or
-  derived from the first described namespace.
+- a pod identifier string derived from the first described namespace.
 - the symbol of the var to invoke
 - the arguments to the var
 - an opts map containing `:handler` containing callback functions: `:success`, `:error` and `:done`

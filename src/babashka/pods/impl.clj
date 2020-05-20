@@ -69,6 +69,9 @@
                   promise? (instance? clojure.lang.IPending chan)
                   exception (when (and promise? error?)
                               (ex-info ex-message ex-data))
+                  ;; NOTE: if we need more fine-grained handlers, we will add
+                  ;; a :raw handler that will just get the bencode message's raw
+                  ;; data
                   {error-handler :error
                    done-handler :done
                    success-handler :success} (when (map? chan)
@@ -165,7 +168,7 @@
          reply (read stdout)
          format (-> (get reply "format") bytes->string keyword)
          ops (some->> (get reply "ops") keys (map keyword) set)
-         pod-id (get-maybe-string reply "pod-id")
+         ;; pod-id (get-maybe-string reply "pod/id")
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
@@ -178,8 +181,9 @@
               :remove-ns remove-ns}
          _ (add-shutdown-hook! #(destroy pod))
          pod-namespaces (get reply "namespaces")
-         pod-id (or pod-id (when-let [ns (first pod-namespaces)]
-                             (get-string ns "name")))
+         pod-id (or (when-let [ns (first pod-namespaces)]
+                      (get-string ns "name"))
+                    (next-id))
          pod (assoc pod :pod-id pod-id)
          vars-fn (fn [ns-name-str vars]
                    (reduce
