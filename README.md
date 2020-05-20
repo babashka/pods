@@ -331,14 +331,16 @@ as client side code. An example from the
 (defn watch
   ([path cb] (watch path cb {}))
   ([path cb opts]
-    (babashka.pods/invoke "pod.babashka.filewatcher"
-      'pod.babashka.filewatcher/watch*
-      [path opts]
-      {:on-success (fn [{:keys [:value :done]}] (cb value))
-       :on-error (fn [{:keys [:ex-message :ex-data]}]
-                   (binding [*out* *err*]
-                     (println "ERROR:" ex-message)))})
-    nil))
+   (babashka.pods/invoke
+    "pod.babashka.filewatcher"
+    'pod.babashka.filewatcher/watch*
+    [path opts]
+    {:handler {:success (fn [{:keys [:value]}] (cb value))
+               :error (fn [{:keys [:ex-message :ex-data]}]
+                        (binding [*out* *err*]
+                          (println "ERROR:" ex-message)))
+               :done (fn [_])}})
+   nil))
 ```
 
 The wrapper function will then invoke `babashka.pods/invoke`, a lower level
@@ -350,19 +352,17 @@ The arguments to `babashka.pods/invoke` are:
   derived from the first described namespace.
 - the symbol of the var to invoke
 - the arguments to the var
-- an opts map containing `:on-success` and `:on-error` callbacks.
+- an opts map containing `:handler` containing callback functions: `:success`, `:error` and `:done`
 
 The return value of `babashka.pods/invoke` is a map containing `:result`. When
 not using callbacks, this is the return value from the pod var invocation. When
 using callbacks, this value is undefined.
 
-The callback `:on-success` is called with a map containing:
+The callback `:success` is called with a map containing:
 
 - `:value`: a return value from the pod var
-- `:done`: a boolean indicating if the var invocation is done (`true`). If
-  `false` then more values can be expected.
 
-The callback `:on-error` is called with a map containing:
+The callback `:error` is called with a map containing:
 
 - `:ex-message`: an error message
 - `:ex-data`: an arbitrary additional error data map. Typically it will contain
@@ -370,6 +370,10 @@ The callback `:on-error` is called with a map containing:
 
 If desired, `:ex-message` and `:ex-data` can be reified into a
 `java.lang.Exception` using `ex-info`.
+
+The callback `:done` is called with one argument which is currently
+undefined. This callback can be used to determine if the pod is done sending
+values.
 
 In the above example the wrapper function calls the pod identified by
 `"pod.babashka.filewatcher"`. It calls the var

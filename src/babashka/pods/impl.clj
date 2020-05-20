@@ -55,8 +55,8 @@
                                 read-fn)
                   status (get reply "status")
                   status (set (map (comp keyword bytes->string) status))
-                  done? (contains? status :done)
                   error? (contains? status :error)
+                  done? (or error? (contains? status :done))
                   [ex-message ex-data]
                   (when error?
                     [(or (some-> (get reply "ex-message")
@@ -70,8 +70,10 @@
                   promise? (instance? clojure.lang.IPending chan)
                   exception (when (and promise? error?)
                               (ex-info ex-message ex-data))
-                  on-success (:on-success chan)
-                  on-error (:on-error chan)
+                  {error-handler :error
+                   done-handler :done
+                   success-handler :success} (when (map? chan)
+                                                    chan)
                   out (some-> (get reply "out")
                               bytes->string)
                   err (some-> (get reply "err")
@@ -79,14 +81,16 @@
               (when (or value* error?)
                 (cond promise?
                       (deliver chan (if error? exception value))
-                      (and (not error?) on-success)
-                      (on-success {:value value
-                                   :done done?})
-                      (and error? on-error)
-                      (on-error {:ex-message ex-message
-                                 :ex-data ex-data})))
-              (when (and (or done? error?) promise?)
-                (deliver chan nil))
+                      (and (not error?) success-handler)
+                      (success-handler {:value value})
+                      (and error? error-handler)
+                      (error-handler {:ex-message ex-message
+                                      :ex-data ex-data})))
+              (when done?
+                (when promise?
+                  (deliver chan nil))
+                (when done-handler
+                  (done-handler {})))
               (when out
                 (binding [*out* out-stream]
                   (println out)))
@@ -100,30 +104,24 @@
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
 
-(defn invoke [pod pod-var args
-              {:keys [:on-success
-                      :on-error
-                      :async]}]
-  (let [stream (:stdin pod)
+(defn invoke [pod pod-var args opts]
+  (let [handlers (:handlers opts)
+        stream (:stdin pod)
         format (:format pod)
         chans (:chans pod)
         write-fn (case format
                    :edn pr-str
                    :json cheshire/generate-string)
         id (next-id)
-        chan (cond async (async/chan)
-                   (or on-success
-                       on-error) {:on-success on-success
-                                  :on-error on-error}
-                   :else (promise))
+        chan (if handlers handlers
+                 (promise))
         _ (swap! chans assoc id chan)
         _ (write stream {"id" id
                          "op" "invoke"
                          "var" (str pod-var)
                          "args" (write-fn args)})]
     ;; see: https://blog.jakubholy.net/2019/core-async-error-handling/
-    (cond async chan
-          (or on-success on-error) nil
+    (cond handlers handlers
           :else (let [v @chan]
                   (if (instance? Throwable v)
                     (throw v)

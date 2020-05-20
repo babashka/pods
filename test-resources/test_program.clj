@@ -3,10 +3,13 @@
 (require '[pod.test-pod :as pod])
 
 (def stream-results (atom []))
+(def done-prom (promise))
 (pods/invoke "pod.test-pod" 'pod.test-pod/range-stream [1 10]
-             {:on-success (fn [{:keys [:value]}]
-                            (swap! stream-results conj value))})
-(while (< (count @stream-results) 9))
+             {:handlers {:success (fn [{:keys [:value]}]
+                                    (swap! stream-results conj value))
+                         :done (fn [_]
+                                 (deliver done-prom :ok))}})
+@done-prom
 
 (def ex-result
   (try (pod.test-pod/error 1 2 3)
@@ -20,13 +23,15 @@
 
 (def callback-result (promise))
 (pods/invoke "pod.test-pod" 'pod.test-pod/add-sync [1 2]
-             {:on-success (fn [{:keys [:value :done]}]
-                            (when done (deliver callback-result value)))})
+             {:handlers {:success
+                         (fn [{:keys [:value]}]
+                           (deliver callback-result value))}})
 
 (def error-result (promise))
 (pods/invoke "pod.test-pod" 'pod.test-pod/add-sync ["1" 2]
-             {:on-error (fn [m]
-                          (deliver error-result m))})
+             {:handlers
+              {:error (fn [m]
+                        (deliver error-result m))}})
 
 [(pod/assoc {:a 1} :b 2)
  (pod.test-pod/add-sync 1 2 3)
