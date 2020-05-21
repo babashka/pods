@@ -26,6 +26,14 @@
 (defn read []
   (bencode/read-bencode stdin))
 
+(def dependents
+  (for [i (range 10)]
+    {"name" (str "x" i)
+     "code"
+     (if-not (zero? i)
+       (format "(def x%s (inc x%s))" i (dec i))
+       "(def x0 0)")}))
+
 (defn run-pod [cli-args]
   (let [format (if (contains? cli-args "--json")
                  :json
@@ -52,16 +60,17 @@
                                        "edn")
                             "namespaces"
                             [{"name" "pod.test-pod"
-                              "vars" [{"name" "add-sync"}
-                                      {"name" "range-stream"
-                                       "async" "true"}
-                                      {"name" "assoc"}
-                                      {"name" "error"}
-                                      {"name" "print"}
-                                      {"name" "print-err"}
-                                      {"name" "return-nil"}
-                                      {"name" "do-twice"
-                                       "code" "(defmacro do-twice [x] `(do ~x ~x))"}]}]
+                              "vars" (into [{"name" "add-sync"}
+                                            {"name" "range-stream"
+                                             "async" "true"}
+                                            {"name" "assoc"}
+                                            {"name" "error"}
+                                            {"name" "print"}
+                                            {"name" "print-err"}
+                                            {"name" "return-nil"}
+                                            {"name" "do-twice"
+                                             "code" "(defmacro do-twice [x] `(do ~x ~x))"}]
+                                           dependents)}]
                             "ops" {"shutdown" {}}})
                     (recur))
                 :invoke (let [var (-> (get message "var")

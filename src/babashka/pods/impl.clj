@@ -3,7 +3,8 @@
   (:refer-clojure :exclude [read])
   (:require [bencode.core :as bencode]
             [cheshire.core :as cheshire]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [flatland.ordered.map :refer [ordered-map]]))
 
 (set! *warn-on-reflection* true)
 
@@ -200,7 +201,7 @@
                                    (fn [& args]
                                      (let [res (invoke pod sym args {:async async?})]
                                        res))))))
-                    {}
+                    (ordered-map)
                     vars))
          pod-namespaces (reduce (fn [namespaces namespace]
                                   (let [name-str (-> namespace (get "name") bytes->string)

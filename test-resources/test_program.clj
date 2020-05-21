@@ -41,6 +41,8 @@
 (def add-result (pod.test-pod/add-sync 1 2 3))
 (def nil-result (pod.test-pod/return-nil))
 
+(def x9 pod.test-pod/x9)
+
 (pods/unload-pod pod-id)
 (def successfully-removed (nil? (find-ns 'pod.test-pod)))
 
@@ -55,4 +57,5 @@
  @callback-result
  (:ex-message @error-result)
  (:ex-data @error-result)
- successfully-removed]
+ successfully-removed
+ x9]
