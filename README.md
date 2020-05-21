@@ -5,6 +5,7 @@ This is the library to load babashka pods. It is used by
 and [sci](https://github.com/borkdude/sci)-based projects other than babashka.
 
 <a title="Wa17gs / CC BY-SA (https://creativecommons.org/licenses/by-sa/4.0)" href="https://commons.wikimedia.org/wiki/File:Below_Golden_Gate_Bridge.jpeg"><img width="512" alt="Below Golden Gate Bridge" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Below_Golden_Gate_Bridge.jpeg/512px-Below_Golden_Gate_Bridge.jpeg"></a>
+<br>
 <em>The word pod means bridge in Romanian.</em>
 
 ## Introduction
