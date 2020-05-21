@@ -3,8 +3,7 @@
   (:refer-clojure :exclude [read])
   (:require [bencode.core :as bencode]
             [cheshire.core :as cheshire]
-            [clojure.edn :as edn]
-            [flatland.ordered.map :refer [ordered-map]]))
+            [clojure.edn :as edn]))
 
 (set! *warn-on-reflection* true)
 
@@ -196,20 +195,23 @@
                             name-sym (symbol name)
                             sym (symbol ns-name-str name)
                             code (get-maybe-string var "code")]
-                        (assoc m name-sym
-                               (or code
-                                   (fn [& args]
-                                     (let [res (invoke pod sym args {:async async?})]
-                                       res))))))
-                    (ordered-map)
+                        (conj m [name-sym
+                                 (or code
+                                     (fn [& args]
+                                       (let [res (invoke pod sym args {:async async?})]
+                                         res)))])))
+                    ;; vars should be ordered as one code segment may depend on the previous one
+                    []
                     vars))
          pod-namespaces (reduce (fn [namespaces namespace]
                                   (let [name-str (-> namespace (get "name") bytes->string)
                                         name-sym (symbol name-str)
                                         vars (get namespace "vars")
                                         vars (vars-fn name-str vars)]
-                                    (assoc namespaces name-sym vars)))
-                                {}
+                                    (conj namespaces [name-sym vars])))
+                                ;; namespaces should also be ordered, allowing
+                                ;; one namespace to leverage the previous one
+                                []
                                 pod-namespaces)
          pod (assoc pod :namespaces pod-namespaces)]
      (swap! pods assoc pod-id pod)

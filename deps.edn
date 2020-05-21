@@ -1,6 +1,5 @@
 {:deps {nrepl/bencode {:mvn/version "1.1.0"}
-        cheshire {:mvn/version "5.10.0"}
-        org.flatland/ordered {:mvn/version "1.5.9"}}
+        cheshire {:mvn/version "5.10.0"}}
  :aliases
  {:sci
   {:extra-deps
