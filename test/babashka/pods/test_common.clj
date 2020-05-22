@@ -1,7 +1,7 @@
 (ns babashka.pods.test-common
   (:require [clojure.java.io :as io]
-            [clojure.test :refer [is]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.test :refer [is]]))
 
 (def test-program (slurp (io/file "test-resources" "test_program.clj")))
 
