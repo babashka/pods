@@ -45,6 +45,9 @@ Currently the following pods are available:
 - [pod-babashka-hsqldb](https://github.com/babashka/pod-babashka-hsqldb): a pod
   that allows you to create and fire queries at a
   [HSQLDB](http://www.hsqldb.org/) database.
+- [pod-janet-peg](https://github.com/sogaiu/pod-janet-peg): a pod for
+  calling [Janet](https://github.com/janet-lang/janet)'s PEG
+  functionality
 - [pod-jaydeesimon-jsoup](https://github.com/jaydeesimon/pod-jaydeesimon-jsoup):
     a pod for parsing HTML using CSS queries backed by Jsoup.
 - [pod-lispyclouds-docker](https://github.com/lispyclouds/pod-lispyclouds-docker):
