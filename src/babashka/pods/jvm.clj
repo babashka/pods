@@ -4,7 +4,14 @@
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec _opts]
-   (let [pod (impl/load-pod pod-spec {:remove-ns remove-ns})
+   (let [pod (impl/load-pod
+              pod-spec
+              {:remove-ns remove-ns
+               :resolve (fn [sym]
+                          (or (resolve sym)
+                              (intern
+                               (create-ns (symbol (namespace sym)))
+                               (symbol (name sym)))))})
          namespaces (:namespaces pod)]
      (doseq [[ns-sym v] namespaces]
        (binding [*ns* (load-string (format "(ns %s) *ns*" ns-sym))]

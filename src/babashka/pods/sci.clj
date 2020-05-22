@@ -10,17 +10,31 @@
        (let [env (:env ctx)
              pod (binding [*out* @sci/out
                            *err* @sci/err]
-                   (impl/load-pod pod-spec
-                                  {:remove-ns
-                                   (fn [sym]
-                                     (swap! env update :namespaces dissoc sym))}))
+                   (impl/load-pod
+                    pod-spec
+                    {:remove-ns
+                     (fn [sym]
+                       (swap! env update :namespaces dissoc sym))
+                     :resolve
+                     (fn [sym]
+                       (let [sym-ns (or (some-> (namespace sym)
+                                                symbol)
+                                        'clojure.core)
+                             sym-name (symbol (name sym))]
+                         (or (get-in @env [:namespaces sym-ns sym-name])
+                             (let [v (sci/new-var sym {:predefined true})]
+                               (swap! env assoc-in [:namespaces sym-ns sym-name]
+                                      v)
+                               v))))}))
              namespaces (:namespaces pod)]
          (doseq [[ns-name vars] namespaces
                  :let [sci-ns (sci/create-ns ns-name)]]
            (sci/binding [sci/ns sci-ns]
              (doseq [[var-name var-value] vars]
                (cond (ifn? var-value)
-                     (swap! env assoc-in [:namespaces ns-name var-name] var-value)
+                     (swap! env assoc-in [:namespaces ns-name var-name]
+                            (sci/new-var
+                             (symbol (str ns-name) (str var-name)) var-value))
                      (string? var-value)
                      (sci/eval-string* ctx var-value)))))
          (sci/future (impl/processor pod))

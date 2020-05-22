@@ -36,8 +36,9 @@
         chans (:chans pod)
         out-stream (:out pod)
         err-stream (:err pod)
+        readers (:readers pod)
         read-fn (case format
-                  :edn edn/read-string
+                  :edn #(edn/read-string {:readers readers} %)
                   :json #(cheshire/parse-string-strict % true))]
     (try
       (loop []
@@ -100,7 +101,7 @@
                           (println err))))
             (recur))))
       (catch Exception e
-        (binding [*out* err-stream]
+        (binding [*out* *err* #_err-stream]
           (prn e))))))
 
 (defn next-id []
@@ -151,9 +152,18 @@
       (let [[o _] (swap-vals! counter inc)]
         o))))
 
+(def bytes->symbol
+  (comp symbol bytes->string))
+
+(defn read-readers [reply resolve-fn]
+  (when-let [dict (get reply "readers")]
+    (let [dict-keys (map symbol (keys dict))
+          dict-vals (map (comp resolve-fn bytes->symbol) (vals dict))]
+      (zipmap dict-keys dict-vals))))
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec {:keys [:remove-ns]}]
+  ([pod-spec {:keys [:remove-ns :resolve]}]
    (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
          _ (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT)
@@ -168,7 +178,8 @@
          reply (read stdout)
          format (-> (get reply "format") bytes->string keyword)
          ops (some->> (get reply "ops") keys (map keyword) set)
-         ;; pod-id (get-maybe-string reply "pod/id")
+         readers (when (identical? :edn format)
+                   (read-readers reply resolve))
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
@@ -178,7 +189,8 @@
               :ops ops
               :out *out*
               :err *err*
-              :remove-ns remove-ns}
+              :remove-ns remove-ns
+              :readers readers}
          _ (add-shutdown-hook! #(destroy pod))
          pod-namespaces (get reply "namespaces")
          pod-id (or (when-let [ns (first pod-namespaces)]

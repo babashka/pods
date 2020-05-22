@@ -58,6 +58,10 @@
                 (do (write {"format" (if (= format :json)
                                        "json"
                                        "edn")
+                            "readers" {"my/tag" "identity"
+                                       ;; NOTE: this function is defined later,
+                                       ;; which should be supported
+                                       "my/other-tag" "pod.test-pod/read-other-tag"}
                             "namespaces"
                             [{"name" "pod.test-pod"
                               "vars" (into [{"name" "add-sync"}
@@ -69,7 +73,13 @@
                                             {"name" "print-err"}
                                             {"name" "return-nil"}
                                             {"name" "do-twice"
-                                             "code" "(defmacro do-twice [x] `(do ~x ~x))"}]
+                                             "code" "(defmacro do-twice [x] `(do ~x ~x))"}
+                                            {"name" "reader-tag"}
+                                            ;; returns thing with other tag
+                                            {"name" "other-tag"}
+                                            ;; reads thing with other tag
+                                            {"name" "read-other-tag"
+                                             "code" "(defn read-other-tag [x] [x x])"}]
                                            dependents)}]
                             "ops" {"shutdown" {}}})
                     (recur))
@@ -134,7 +144,17 @@
                             (write
                              {"status" ["done"]
                               "id" id
-                              "value" "nil"}))
+                              "value" "nil"})
+                            pod.test-pod/reader-tag
+                            (write
+                             {"status" ["done"]
+                              "id" id
+                              "value" "#my/tag[1 2 3]"})
+                            pod.test-pod/other-tag
+                            (write
+                             {"status" ["done"]
+                              "id" id
+                              "value" "#my/other-tag[1]"}))
                           (recur))
                 :shutdown (System/exit 0))))))
       (catch Exception e

@@ -43,6 +43,9 @@
 
 (def x9 pod.test-pod/x9)
 
+(def tagged (pod/reader-tag))
+(def other-tagged (pod/other-tag))
+
 (pods/unload-pod pod-id)
 (def successfully-removed (nil? (find-ns 'pod.test-pod)))
 
@@ -58,4 +61,6 @@
  (:ex-message @error-result)
  (:ex-data @error-result)
  successfully-removed
- x9]
+ x9
+ tagged
+ other-tagged]

@@ -1,6 +1,5 @@
 (ns babashka.pods.test-common
   (:require [clojure.java.io :as io]
-            [clojure.string :as str]
             [clojure.test :refer [is]]))
 
 (def test-program (slurp (io/file "test-resources" "test_program.clj")))
@@ -16,12 +15,15 @@
                         "Illegal arguments / {:args (1 2 3)}"
                         nil
                         3
-                        "java.lang.String cannot be cast to java.lang.Number"
+                        #"cast"
                         {:args ["1" 2]}
                         true
-                        9] ret)]
-    (if (string? expected)
-      (str/includes? actual expected)
-      (= expected actual)))
+                        9
+                        [1 2 3]
+                        [[1] [1]]]
+               (concat ret (repeat ::nil)))]
+    (if (instance? java.util.regex.Pattern expected)
+      (is (re-find expected actual))
+      (is (= expected actual))))
   (is (= "(\"hello\" \"print\" \"this\" \"debugging\" \"message\")\n:foo\n:foo\n" (str out)))
   (is (= "(\"hello\" \"print\" \"this\" \"error\")\n" (str err))))

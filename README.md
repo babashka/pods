@@ -276,6 +276,17 @@ these messages to `*out*` and `*err*`. Stderr from the pod is redirected to
  "err" "debug"}
 ```
 
+#### readers
+
+If `format` is `edn` then the pod may describe reader functions:
+
+``` clojure
+{"readers" {"my/tag" "clojure.core/identity"}}
+```
+
+so payloads containing tagged values like `#my/tag[1 2 3]` are read correctly as
+`[1 2 3]`.
+
 #### Error handling
 
 Responses may contain an `ex-message` string and `ex-data` payload string (JSON
