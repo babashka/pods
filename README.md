@@ -38,6 +38,8 @@ influenced by and built upon battle-tested technologies:
 
 Currently the following pods are available:
 
+- [bootleg](https://github.com/retrogradeorbit/bootleg): static HTML website
+  generation.
 - [clj-kondo](https://github.com/borkdude/clj-kondo/#babashka-pod): a Clojure
   linter
 - [pod-babashka-filewatcher](https://github.com/babashka/pod-babashka-filewatcher): a
