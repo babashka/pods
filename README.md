@@ -36,6 +36,13 @@ influenced by and built upon battle-tested technologies:
 - [EDN](https://github.com/edn-format/edn)
 - composition of UNIX command line tools in via good old stdin and stdout
 
+The name pod is inspired by [boot's pod
+feature](https://github.com/boot-clj/boot/wiki/Pods). It means _underneath_ or
+_below_ in Polish and Russian. In Romanian it means _bridge_
+([source](https://en.wiktionary.org/wiki/pod)).
+
+## Available pods
+
 Currently the following pods are available:
 
 - [bootleg](https://github.com/retrogradeorbit/bootleg): static HTML website
@@ -54,11 +61,6 @@ Currently the following pods are available:
     a pod for parsing HTML using CSS queries backed by Jsoup.
 - [pod-lispyclouds-docker](https://github.com/lispyclouds/pod-lispyclouds-docker):
   A pod for interacting with docker
-
-The name pod is inspired by [boot's pod
-feature](https://github.com/boot-clj/boot/wiki/Pods). It means _underneath_ or
-_below_ in Polish and Russian. In Romanian it means _bridge_
-([source](https://en.wiktionary.org/wiki/pod)).
 
 ## Status
 
