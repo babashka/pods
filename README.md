@@ -127,7 +127,7 @@ what your pod is about.
 
 Examples:
 
-- [pod-lispyclouds-sqlite](../examples/pods/pod-lispyclouds-sqlite): a pod to
+- [pod-lispyclouds-sqlite](examples/pod-lispyclouds-sqlite): a pod to
   communicate with [sqlite](https://www.sqlite.org/), provided by
   [@lispyclouds](https://github.com/lispyclouds).
 
@@ -305,6 +305,11 @@ Example:
  "ex-data" "{\"input\": 10}
  "status" "[\"done\", \"error\"]"}
 ```
+
+#### Debugging
+
+To debug your pod, you can write to stderr of the pod's process or write to a
+log file. Currently, stderr is sent to stderr of the pod client.
 
 #### Environment
 
