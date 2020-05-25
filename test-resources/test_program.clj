@@ -47,7 +47,6 @@
 (def other-tagged (pod/other-tag))
 
 (require '[pod.test-pod.loaded])
-
 (def loaded (pod.test-pod.loaded/loaded 1))
 
 (pods/unload-pod pod-id)
