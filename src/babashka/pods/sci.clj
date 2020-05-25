@@ -2,6 +2,19 @@
   (:require [babashka.pods.impl :as impl]
             [sci.core :as sci]))
 
+(defn process-namespace [ctx {:keys [:name :vars]}]
+  (let [env (:env ctx)
+        ns-name name
+        sci-ns (sci/create-ns ns-name)]
+    (sci/binding [sci/ns sci-ns]
+      (doseq [[var-name var-value] vars]
+        (cond (ifn? var-value)
+              (swap! env assoc-in [:namespaces ns-name var-name]
+                     (sci/new-var
+                      (symbol (str ns-name) (str var-name)) var-value))
+              (string? var-value)
+              (sci/eval-string* ctx var-value))))))
+
 (def load-pod
   (with-meta
     (fn
@@ -39,16 +52,8 @@
                                       v)
                                v))))}))
              namespaces (:namespaces pod)]
-         (doseq [[ns-name vars] namespaces
-                 :let [sci-ns (sci/create-ns ns-name)]]
-           (sci/binding [sci/ns sci-ns]
-             (doseq [[var-name var-value] vars]
-               (cond (ifn? var-value)
-                     (swap! env assoc-in [:namespaces ns-name var-name]
-                            (sci/new-var
-                             (symbol (str ns-name) (str var-name)) var-value))
-                     (string? var-value)
-                     (sci/eval-string* ctx var-value)))))
+         (doseq [[ns-name vars] namespaces]
+           (process-namespace ctx {:name ns-name :vars vars}))
          (sci/future (impl/processor pod))
          {:pod/id (:pod-id pod)})))
     {:sci.impl/op :needs-ctx}))
