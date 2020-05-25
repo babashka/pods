@@ -2,7 +2,7 @@
   (:require [babashka.pods.impl :as impl]
             [sci.core :as sci]))
 
-(defn process-namespace [ctx {:keys [:name :vars :done]}]
+(defn- process-namespace [ctx {:keys [:name :vars :done]}]
   (let [env (:env ctx)
         ns-name name
         sci-ns (sci/create-ns ns-name)]
@@ -44,7 +44,7 @@
                                       v)
                                v))))}))
              namespaces (:namespaces pod)
-             load? (contains? (:ops pod) :load)
+             load? (contains? (:ops pod) :load-ns)
              namespaces-to-load (when load?
                                   (set (keep (fn [[ns-name vars]]
                                                (when (empty? vars)

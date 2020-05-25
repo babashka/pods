@@ -83,7 +83,7 @@
                                            dependents)}
                              {"name" "pod.test-pod.loaded"}]
                             "ops" {"shutdown" {}
-                                   "load" {}}})
+                                   "load-ns" {}}})
                     (recur))
                 :invoke (let [var (-> (get message "var")
                                       read-string
@@ -159,12 +159,12 @@
                               "value" "#my/other-tag[1]"}))
                           (recur))
                 :shutdown (System/exit 0)
-                :load (let [path (-> (get message "path")
-                                     read-string
-                                     symbol)
+                :load-ns (let [ns (-> (get message "ns")
+                                      read-string
+                                      symbol)
                             id (-> (get message "id")
                                    read-string)]
-                        (case path
+                        (case ns
                           pod.test-pod.loaded
                           (write
                            {"status" ["done"]

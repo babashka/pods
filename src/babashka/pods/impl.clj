@@ -241,8 +241,8 @@
                      (callback {:name name-sym :vars vars :done prom})))]
     (swap! callbacks assoc id callback)
     (write (:stdin pod)
-           {"op" "load"
-            "path" (str namespace)
+           {"op" "load-ns"
+            "ns" (str namespace)
             "id" id})
     @prom))
 

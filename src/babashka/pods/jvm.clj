@@ -45,7 +45,7 @@
                                (create-ns (symbol (namespace sym)))
                                (symbol (name sym)))))})
          namespaces (:namespaces pod)
-         load? (contains? (:ops pod) :load)]
+         load? (contains? (:ops pod) :load-ns)]
      (when load?
        (swap! namespaces-to-load
               merge
