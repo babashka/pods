@@ -20,19 +20,7 @@
     (fn
       ([ctx pod-spec] (load-pod ctx pod-spec nil))
       ([ctx pod-spec _opts]
-       (let [ns-load-fns (atom {})
-             load-fn (fn load-fn [{:keys [:namespace]}]
-                       (when-let [f (get @ns-load-fns namespace)]
-                         (f)
-                         ;; return empty source, for sci to evaluate
-                         ""))
-             env (:env ctx)
-             prev-load-fn (:load-fn @env)
-             new-load-fn (fn [m]
-                           (or (load-fn m)
-                               (when prev-load-fn
-                                 (prev-load-fn m))))
-             _ (swap! env assoc :load-fn new-load-fn)
+       (let [env (:env ctx)
              pod (binding [*out* @sci/out
                            *err* @sci/err]
                    (impl/load-pod
@@ -51,7 +39,23 @@
                                (swap! env assoc-in [:namespaces sym-ns sym-name]
                                       v)
                                v))))}))
-             namespaces (:namespaces pod)]
+             namespaces (:namespaces pod)
+             namespaces-to-load (when (contains? (:ops pod) :load)
+                                  (set (filter (fn [[_ns-name vars]]
+                                                 (nil? vars))
+                                               namespaces)))]
+         (when (seq namespaces-to-load)
+           (let [load-fn (fn load-fn [{:keys [:namespace]}]
+                           (when (contains? namespaces-to-load namespace)
+                             #_(impl/load pod namespace (fn [namespace]
+                                                          (process-namespace ctx namespace)))
+                             ""))
+                 prev-load-fn (:load-fn @env)
+                 new-load-fn (fn [m]
+                               (or (load-fn m)
+                                   (when prev-load-fn
+                                     (prev-load-fn m))))]
+             (swap! env assoc :load-fn new-load-fn)))
          (doseq [[ns-name vars] namespaces]
            (process-namespace ctx {:name ns-name :vars vars}))
          (sci/future (impl/processor pod))
