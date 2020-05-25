@@ -6,8 +6,6 @@
   (let [env (:env ctx)
         ns-name name
         sci-ns (sci/create-ns ns-name)]
-    #_(swap! env assoc-in [:namespaces ns-name :obj]
-           sci-ns)
     (sci/binding [sci/ns sci-ns]
       (doseq [[var-name var-value] vars]
         (cond (ifn? var-value)
@@ -15,8 +13,7 @@
                      (sci/new-var
                       (symbol (str ns-name) (str var-name)) var-value))
               (string? var-value)
-              (sci/eval-string* ctx var-value))))
-    #_(prn (get-in @env [:namespaces ns-name])))
+              (sci/eval-string* ctx var-value)))))
   (when done (deliver done :ok)))
 
 (def load-pod

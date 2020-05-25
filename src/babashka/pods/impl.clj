@@ -53,7 +53,9 @@
                   id    (bytes->string id)]
               (if-let [cb (get @callbacks id)]
                 (do (swap! callbacks dissoc id)
-                    (cb reply))
+                    ;; callbacks run in their own threads to not block the
+                    ;; processor
+                    (future (cb reply)))
                 (let [value* (find reply "value")
                       value (some-> value*
                                     second
@@ -237,8 +239,11 @@
   (let [id (next-id)
         prom (promise)
         callback (fn [reply]
-                   (let [[name-sym vars] (bencode->namespace pod reply)]
-                     (callback {:name name-sym :vars vars :done prom})))]
+                   (try (let [[name-sym vars] (bencode->namespace pod reply)]
+                          (callback {:name name-sym :vars vars :done prom}))
+                        (catch Throwable e
+                          (binding [*out* *err*]
+                            (prn e)))))]
     (swap! callbacks assoc id callback)
     (write (:stdin pod)
            {"op" "load-ns"
