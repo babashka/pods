@@ -2,7 +2,7 @@
   (:require [babashka.pods.impl :as impl]
             [sci.core :as sci]))
 
-(defn process-namespace [ctx {:keys [:name :vars]}]
+(defn process-namespace [ctx {:keys [:name :vars :done]}]
   (let [env (:env ctx)
         ns-name name
         sci-ns (sci/create-ns ns-name)]
@@ -16,7 +16,8 @@
                       (symbol (str ns-name) (str var-name)) var-value))
               (string? var-value)
               (sci/eval-string* ctx var-value))))
-    #_(prn (get-in @env [:namespaces ns-name]))))
+    #_(prn (get-in @env [:namespaces ns-name])))
+  (when done (deliver done :ok)))
 
 (def load-pod
   (with-meta

@@ -235,14 +235,16 @@
 
 (defn load-ns [pod namespace callback]
   (let [id (next-id)
+        prom (promise)
         callback (fn [reply]
                    (let [[name-sym vars] (bencode->namespace pod reply)]
-                     (callback {:name name-sym :vars vars})))]
+                     (callback {:name name-sym :vars vars :done prom})))]
     (swap! callbacks assoc id callback)
     (write (:stdin pod)
            {"op" "load"
             "path" (str namespace)
-            "id" id})))
+            "id" id})
+    @prom))
 
 (defn invoke-public [pod-id fn-sym args opts]
   (let [pod (lookup-pod pod-id)]
