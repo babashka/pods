@@ -7,7 +7,19 @@
     (fn
       ([ctx pod-spec] (load-pod ctx pod-spec nil))
       ([ctx pod-spec _opts]
-       (let [env (:env ctx)
+       (let [ns-load-fns (atom {})
+             load-fn (fn load-fn [{:keys [:namespace]}]
+                       (when-let [f (get @ns-load-fns namespace)]
+                         (f)
+                         ;; return empty source, for sci to evaluate
+                         ""))
+             env (:env ctx)
+             prev-load-fn (:load-fn @env)
+             new-load-fn (fn [m]
+                           (or (load-fn m)
+                               (when prev-load-fn
+                                 (prev-load-fn m))))
+             _ (swap! env assoc :load-fn new-load-fn)
              pod (binding [*out* @sci/out
                            *err* @sci/err]
                    (impl/load-pod
