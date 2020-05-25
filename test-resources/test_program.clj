@@ -48,8 +48,7 @@
 
 (require '[pod.test-pod.loaded])
 
-(find-ns 'pod.test-pod.loaded) ;; nil?
-#_(prn (resolve 'pod.test-pod.loaded/loaded)) ;; nil... TODO
+(find-ns 'pod.test-pod.loaded) ;; nil, but this call makes the next call pass. huh?
 (def loaded (pod.test-pod.loaded/loaded 1))
 
 (pods/unload-pod pod-id)
