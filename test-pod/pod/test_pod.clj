@@ -80,8 +80,10 @@
                                             ;; reads thing with other tag
                                             {"name" "read-other-tag"
                                              "code" "(defn read-other-tag [x] [x x])"}]
-                                           dependents)}]
-                            "ops" {"shutdown" {}}})
+                                           dependents)}
+                             {"name" "pod.test-pod.loaded"}]
+                            "ops" {"shutdown" {}
+                                   "load" {}}})
                     (recur))
                 :invoke (let [var (-> (get message "var")
                                       read-string
@@ -156,7 +158,20 @@
                               "id" id
                               "value" "#my/other-tag[1]"}))
                           (recur))
-                :shutdown (System/exit 0))))))
+                :shutdown (System/exit 0)
+                :load (let [path (-> (get message "path")
+                                     read-string
+                                     symbol)
+                            id (-> (get message "id")
+                                   read-string)]
+                        (case path
+                          pod.test-pod.loaded
+                          (write
+                           {"status" ["done"]
+                            "id" id
+                            "name" "pod.test-pod.loaded"
+                            "vars" [{"name" "loaded"
+                                     "code" "(defn loaded [x] (inc x))"}]}))))))))
       (catch Exception e
         (binding [*out* *err*]
           (prn e))))))

@@ -236,8 +236,8 @@
 (defn load-ns [pod namespace callback]
   (let [id (next-id)
         callback (fn [reply]
-                   (let [namespace (bencode->namespace pod reply)]
-                     (callback namespace)))]
+                   (let [[name-sym vars] (bencode->namespace pod reply)]
+                     (callback {:name name-sym :vars vars})))]
     (swap! callbacks assoc id callback)
     (write (:stdin pod)
            {"op" "load"

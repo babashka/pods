@@ -13,7 +13,9 @@
                      (sci/new-var
                       (symbol (str ns-name) (str var-name)) var-value))
               (string? var-value)
-              (sci/eval-string* ctx var-value))))))
+              (do
+                (prn "eval" @sci/ns var-value)
+                (sci/eval-string* ctx var-value)))))))
 
 (def load-pod
   (with-meta
@@ -40,9 +42,11 @@
                                       v)
                                v))))}))
              namespaces (:namespaces pod)
-             namespaces-to-load (when (contains? (:ops pod) :load)
-                                  (set (filter (fn [[_ns-name vars]]
-                                                 (nil? vars))
+             load? (contains? (:ops pod) :load)
+             namespaces-to-load (when load?
+                                  (set (keep (fn [[ns-name vars]]
+                                               (when (empty? vars)
+                                                 ns-name))
                                                namespaces)))]
          (when (seq namespaces-to-load)
            (let [load-fn (fn load-fn [{:keys [:namespace]}]
@@ -57,7 +61,9 @@
                                    (when prev-load-fn
                                      (prev-load-fn m))))]
              (swap! env assoc :load-fn new-load-fn)))
-         (doseq [[ns-name vars] namespaces]
+         (doseq [[ns-name vars] namespaces
+                 :when (or (not load)
+                           (seq vars))]
            (process-namespace ctx {:name ns-name :vars vars}))
          (sci/future (impl/processor pod))
          {:pod/id (:pod-id pod)})))

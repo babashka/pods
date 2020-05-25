@@ -12,4 +12,4 @@
                                     :username :env/babashka_nrepl_clojars_user
                                     :password :env/babashka_nrepl_clojars_pass
                                     :sign-releases false}]]
-  :profiles {:test {:dependencies [[borkdude/sci "0.0.13-alpha.26"]]}})
+  :profiles {:test {:dependencies [[borkdude/sci "0.0.13-alpha.27"]]}})
