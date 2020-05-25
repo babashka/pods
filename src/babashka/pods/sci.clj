@@ -47,8 +47,9 @@
          (when (seq namespaces-to-load)
            (let [load-fn (fn load-fn [{:keys [:namespace]}]
                            (when (contains? namespaces-to-load namespace)
-                             #_(impl/load pod namespace (fn [namespace]
-                                                          (process-namespace ctx namespace)))
+                             (impl/load-ns
+                              pod namespace (fn [namespace]
+                                              (process-namespace ctx namespace)))
                              ""))
                  prev-load-fn (:load-fn @env)
                  new-load-fn (fn [m]
