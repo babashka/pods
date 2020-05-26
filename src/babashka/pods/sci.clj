@@ -5,7 +5,7 @@
 (defn- process-namespace [ctx {:keys [:name :vars]}]
   (let [env (:env ctx)
         ns-name name
-        sci-ns (sci/create-ns ns-name)]
+        sci-ns (sci/create-ns (symbol ns-name))]
     (sci/binding [sci/ns sci-ns]
       (doseq [[var-name var-value] vars]
         (cond (ifn? var-value)
