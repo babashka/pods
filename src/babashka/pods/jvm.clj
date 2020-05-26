@@ -9,7 +9,7 @@
               (replace \/ \. )
               (replace \_ \-))))
 
-(defn- process-namespace [{:keys [:name :vars :done]}]
+(defn- process-namespace [{:keys [:name :vars]}]
   (binding [*ns* (load-string (format "(ns %s) *ns*" name))]
     (doseq [[var-sym v] vars]
       (cond
@@ -18,8 +18,7 @@
           (ns-unmap *ns* var-sym)
           (intern name var-sym v))
         (string? v)
-        (load-string v))))
-  (when done (deliver done :ok)))
+        (load-string v)))))
 
 (let [core-load clojure.core/load]
   (intern 'clojure.core 'load
@@ -28,9 +27,8 @@
               (doseq [path paths]
                 (let [lib (unroot-resource path)]
                   (if-let [pod (get nss lib)]
-                    (impl/load-ns
-                     pod lib (fn [namespace]
-                               (process-namespace namespace)))
+                    (let [ns (impl/load-ns pod lib)]
+                      (process-namespace ns))
                     (core-load path))))))))
 
 (defn load-pod
@@ -50,13 +48,12 @@
        (swap! namespaces-to-load
               merge
               (into {}
-                    (keep (fn [[ns-name vars]]
-                            (when (empty? vars)
+                    (keep (fn [[ns-name _ lazy?]]
+                            (when lazy?
                               [ns-name pod]))
                           namespaces))))
-     (doseq [[ns-sym vars] namespaces
-             :when (or (not load)
-                       (seq vars))]
+     (doseq [[ns-sym vars lazy?] namespaces
+             :when (not lazy?)]
        (process-namespace {:name ns-sym :vars vars}))
      (future (impl/processor pod))
      {:pod/id (:pod-id pod)})))

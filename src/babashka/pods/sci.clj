@@ -2,7 +2,7 @@
   (:require [babashka.pods.impl :as impl]
             [sci.core :as sci]))
 
-(defn- process-namespace [ctx {:keys [:name :vars :done]}]
+(defn- process-namespace [ctx {:keys [:name :vars]}]
   (let [env (:env ctx)
         ns-name name
         sci-ns (sci/create-ns ns-name)]
@@ -13,8 +13,7 @@
                      (sci/new-var
                       (symbol (str ns-name) (str var-name)) var-value))
               (string? var-value)
-              (sci/eval-string* ctx var-value)))))
-  (when done (deliver done :ok)))
+              (sci/eval-string* ctx var-value))))))
 
 (def load-pod
   (with-meta
@@ -43,26 +42,25 @@
              namespaces (:namespaces pod)
              load? (contains? (:ops pod) :load-ns)
              namespaces-to-load (when load?
-                                  (set (keep (fn [[ns-name vars]]
-                                               (when (empty? vars)
+                                  (set (keep (fn [[ns-name _ lazy?]]
+                                               (when lazy?
                                                  ns-name))
                                                namespaces)))]
          (when (seq namespaces-to-load)
            (let [load-fn (fn load-fn [{:keys [:namespace]}]
                            (when (contains? namespaces-to-load namespace)
-                             (impl/load-ns
-                              pod namespace (fn [namespace]
-                                              (process-namespace ctx namespace)))
-                             ""))
+                             (let [ns (impl/load-ns pod namespace)]
+                               (process-namespace ctx ns))
+                             {:file nil
+                              :source ""}))
                  prev-load-fn (:load-fn @env)
                  new-load-fn (fn [m]
                                (or (load-fn m)
                                    (when prev-load-fn
                                      (prev-load-fn m))))]
              (swap! env assoc :load-fn new-load-fn)))
-         (doseq [[ns-name vars] namespaces
-                 :when (or (not load)
-                           (seq vars))]
+         (doseq [[ns-name vars lazy?] namespaces
+                 :when (not lazy?)]
            (process-namespace ctx {:name ns-name :vars vars}))
          (sci/future (impl/processor pod))
          {:pod/id (:pod-id pod)})))

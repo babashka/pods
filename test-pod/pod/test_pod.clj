@@ -81,7 +81,10 @@
                                             {"name" "read-other-tag"
                                              "code" "(defn read-other-tag [x] [x x])"}]
                                            dependents)}
-                             {"name" "pod.test-pod.loaded"}]
+                             {"name" "pod.test-pod.loaded"
+                              "lazy" "true"}
+                             {"name" "pod.test-pod.loaded2"
+                              "lazy" "true"}]
                             "ops" {"shutdown" {}
                                    "load-ns" {}}})
                     (recur))
@@ -162,16 +165,26 @@
                 :load-ns (let [ns (-> (get message "ns")
                                       read-string
                                       symbol)
-                            id (-> (get message "id")
-                                   read-string)]
-                        (case ns
-                          pod.test-pod.loaded
-                          (write
-                           {"status" ["done"]
-                            "id" id
-                            "name" "pod.test-pod.loaded"
-                            "vars" [{"name" "loaded"
-                                     "code" "(defn loaded [x] (inc x))"}]}))))))))
+                               id (-> (get message "id")
+                                      read-string)]
+                           (case ns
+                             pod.test-pod.loaded
+                             (write
+                              {"status" ["done"]
+                               "id" id
+                               "name" "pod.test-pod.loaded"
+                               "vars" [{"name" "loaded"
+                                        "code" "(defn loaded [x] (inc x))"}]})
+                             pod.test-pod.loaded2
+                             (write
+                              {"status" ["done"]
+                               "id" id
+                               "name" "pod.test-pod.loaded2"
+                               "vars" [{"name" "x"
+                                        "code" "(require '[pod.test-pod.loaded :as loaded])"}
+                                       {"name" "loaded"
+                                        "code" "(defn loaded [x] (loaded/loaded x))"}]}))
+                           (recur)))))))
       (catch Exception e
         (binding [*out* *err*]
           (prn e))))))

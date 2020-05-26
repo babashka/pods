@@ -46,8 +46,8 @@
 (def tagged (pod/reader-tag))
 (def other-tagged (pod/other-tag))
 
-(require '[pod.test-pod.loaded])
-(def loaded (pod.test-pod.loaded/loaded 1))
+(require '[pod.test-pod.loaded2 :as loaded2])
+(def loaded (loaded2/loaded 1))
 
 (pods/unload-pod pod-id)
 (def successfully-removed (nil? (find-ns 'pod.test-pod)))
