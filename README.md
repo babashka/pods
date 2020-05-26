@@ -373,7 +373,8 @@ upon which the pod will reply with the namespace data:
 
 ``` clojure
 {"name" "pod.lispyclouds.deferred-ns"
- "vars" [{"name" "myfunc" "code" "(defn my-func [])"}]}
+ "vars" [{"name" "myfunc" "code" "(defn my-func [])"}]
+ "id" "..."}
 ```
 
 If a deferred namespace depends on another deferred namespace, provide explicit
@@ -384,7 +385,8 @@ If a deferred namespace depends on another deferred namespace, provide explicit
  "vars"
  [{"name" "myfunc"
    "code" "(require '[pod.lispyclouds.deferred-ns :as dns])
-           (defn my-func [] (dns/x))"}]}
+           (defn my-func [] (dns/x))"}]
+ "id" "..."}
 ```
 
 #### Async
