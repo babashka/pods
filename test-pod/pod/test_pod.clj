@@ -80,7 +80,11 @@
                                             ;; reads thing with other tag
                                             {"name" "read-other-tag"
                                              "code" "(defn read-other-tag [x] [x x])"}]
-                                           dependents)}]
+                                           dependents)}
+                             {"name" "pod.test-pod.loaded"
+                              "defer" "true"}
+                             {"name" "pod.test-pod.loaded2"
+                              "defer" "true"}]
                             "ops" {"shutdown" {}}})
                     (recur))
                 :invoke (let [var (-> (get message "var")
@@ -156,7 +160,30 @@
                               "id" id
                               "value" "#my/other-tag[1]"}))
                           (recur))
-                :shutdown (System/exit 0))))))
+                :shutdown (System/exit 0)
+                :load-ns (let [ns (-> (get message "ns")
+                                      read-string
+                                      symbol)
+                               id (-> (get message "id")
+                                      read-string)]
+                           (case ns
+                             pod.test-pod.loaded
+                             (write
+                              {"status" ["done"]
+                               "id" id
+                               "name" "pod.test-pod.loaded"
+                               "vars" [{"name" "loaded"
+                                        "code" "(defn loaded [x] (inc x))"}]})
+                             pod.test-pod.loaded2
+                             (write
+                              {"status" ["done"]
+                               "id" id
+                               "name" "pod.test-pod.loaded2"
+                               "vars" [{"name" "x"
+                                        "code" "(require '[pod.test-pod.loaded :as loaded])"}
+                                       {"name" "loaded"
+                                        "code" "(defn loaded [x] (loaded/loaded x))"}]}))
+                           (recur)))))))
       (catch Exception e
         (binding [*out* *err*]
           (prn e))))))

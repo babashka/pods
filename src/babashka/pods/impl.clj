@@ -30,80 +30,6 @@
   (some-> (get m k)
           bytes->string))
 
-(defn processor [pod]
-  (let [stdout (:stdout pod)
-        format (:format pod)
-        chans (:chans pod)
-        out-stream (:out pod)
-        err-stream (:err pod)
-        readers (:readers pod)
-        read-fn (case format
-                  :edn #(edn/read-string {:readers readers} %)
-                  :json #(cheshire/parse-string-strict % true))]
-    (try
-      (loop []
-        (let [reply (try (read stdout)
-                         (catch java.io.EOFException _
-                           ::EOF))]
-          (when-not (identical? ::EOF reply)
-            (let [id    (get reply "id")
-                  id    (bytes->string id)
-                  value* (find reply "value")
-                  value (some-> value*
-                                second
-                                bytes->string
-                                read-fn)
-                  status (get reply "status")
-                  status (set (map (comp keyword bytes->string) status))
-                  error? (contains? status :error)
-                  done? (or error? (contains? status :done))
-                  [ex-message ex-data]
-                  (when error?
-                    [(or (some-> (get reply "ex-message")
-                                 bytes->string)
-                         "")
-                     (or (some-> (get reply "ex-data")
-                                 bytes->string
-                                 read-fn)
-                         {})])
-                  chan (get @chans id)
-                  promise? (instance? clojure.lang.IPending chan)
-                  exception (when (and promise? error?)
-                              (ex-info ex-message ex-data))
-                  ;; NOTE: if we need more fine-grained handlers, we will add
-                  ;; a :raw handler that will just get the bencode message's raw
-                  ;; data
-                  {error-handler :error
-                   done-handler :done
-                   success-handler :success} (when (map? chan)
-                                               chan)
-                  out (some-> (get reply "out")
-                              bytes->string)
-                  err (some-> (get reply "err")
-                              bytes->string)]
-              (when (or value* error?)
-                (cond promise?
-                      (deliver chan (if error? exception value))
-                      (and (not error?) success-handler)
-                      (success-handler value)
-                      (and error? error-handler)
-                      (error-handler {:ex-message ex-message
-                                      :ex-data ex-data})))
-              (when (and done? (not error?))
-                (when promise?
-                  (deliver chan nil))
-                (when done-handler
-                  (done-handler)))
-              (when out
-                (binding [*out* out-stream]
-                  (println out)))
-              (when err (binding [*out* err-stream]
-                          (println err))))
-            (recur))))
-      (catch Exception e
-        (binding [*out* *err* #_err-stream]
-          (prn e))))))
-
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
 
@@ -128,6 +54,103 @@
                   (if (instance? Throwable v)
                     (throw v)
                     v)))))
+
+(defn bencode->vars [pod ns-name-str vars]
+  (mapv
+   (fn [var]
+     (let [name (get-string var "name")
+           async? (some-> (get var "async")
+                          bytes->string
+                          #(Boolean/parseBoolean %))
+           name-sym (symbol name)
+           sym (symbol ns-name-str name)
+           code (get-maybe-string var "code")]
+       [name-sym
+        (or code
+            (fn [& args]
+              (let [res (invoke pod sym args {:async async?})]
+                res)))]))
+   vars))
+
+(defn processor [pod]
+  (let [stdout (:stdout pod)
+        format (:format pod)
+        chans (:chans pod)
+        out-stream (:out pod)
+        err-stream (:err pod)
+        readers (:readers pod)
+        read-fn (case format
+                  :edn #(edn/read-string {:readers readers} %)
+                  :json #(cheshire/parse-string-strict % true))]
+    (try
+      (loop []
+        (let [reply (try (read stdout)
+                         (catch java.io.EOFException _
+                           ::EOF))]
+          (when-not (identical? ::EOF reply)
+            (let [id (get reply "id")
+                  id    (bytes->string id)
+                  value* (find reply "value")
+                  value (some-> value*
+                                second
+                                bytes->string
+                                read-fn)
+                  status (get reply "status")
+                  status (set (map (comp keyword bytes->string) status))
+                  error? (contains? status :error)
+                  done? (or error? (contains? status :done))
+                  [ex-message ex-data]
+                  (when error?
+                    [(or (some-> (get reply "ex-message")
+                                 bytes->string)
+                         "")
+                     (or (some-> (get reply "ex-data")
+                                 bytes->string
+                                 read-fn)
+                         {})])
+                  namespace (when-let [v (get reply "vars")]
+                              (let [name (-> (get reply "name")
+                                             bytes->string)]
+                                {:name name :vars (bencode->vars pod name v)}))
+                  chan (get @chans id)
+                  promise? (instance? clojure.lang.IPending chan)
+                  exception (when (and promise? error?)
+                              (ex-info ex-message ex-data))
+                  ;; NOTE: if we need more fine-grained handlers, we will add
+                  ;; a :raw handler that will just get the bencode message's raw
+                  ;; data
+                  {error-handler :error
+                   done-handler :done
+                   success-handler :success} (when (map? chan)
+                                               chan)
+                  out (some-> (get reply "out")
+                              bytes->string)
+                  err (some-> (get reply "err")
+                              bytes->string)]
+              (when (or value* error? namespace)
+                (cond promise?
+                      (deliver chan (cond error? exception
+                                          value value
+                                          namespace namespace))
+                      (and (not error?) success-handler)
+                      (success-handler value)
+                      (and error? error-handler)
+                      (error-handler {:ex-message ex-message
+                                      :ex-data ex-data})))
+              (when (and done? (not error?))
+                (when promise?
+                  (deliver chan nil))
+                (when done-handler
+                  (done-handler)))
+              (when out
+                (binding [*out* out-stream]
+                  (println out)))
+              (when err (binding [*out* err-stream]
+                          (println err))))
+            (recur))))
+      (catch Exception e
+        (binding [*out* *err* #_err-stream]
+          (prn e))))))
 
 (def pods (atom {}))
 
@@ -160,6 +183,14 @@
     (let [dict-keys (map symbol (keys dict))
           dict-vals (map (comp resolve-fn bytes->symbol) (vals dict))]
       (zipmap dict-keys dict-vals))))
+
+(defn bencode->namespace [pod namespace]
+  (let [name-str (-> namespace (get "name") bytes->string)
+        name-sym (symbol name-str)
+        vars (get namespace "vars")
+        vars (bencode->vars pod name-str vars)
+        defer? (some-> namespace (get-maybe-string "defer") (= "true"))]
+    [name-sym vars defer?]))
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
@@ -197,32 +228,22 @@
                       (get-string ns "name"))
                     (next-id))
          pod (assoc pod :pod-id pod-id)
-         vars-fn (fn [ns-name-str vars]
-                   (mapv
-                    (fn [var]
-                      (let [name (get-string var "name")
-                            async? (some-> (get var "async")
-                                           bytes->string
-                                           #(Boolean/parseBoolean %))
-                            name-sym (symbol name)
-                            sym (symbol ns-name-str name)
-                            code (get-maybe-string var "code")]
-                        [name-sym
-                         (or code
-                             (fn [& args]
-                               (let [res (invoke pod sym args {:async async?})]
-                                 res)))]))
-                    vars))
-         pod-namespaces (mapv (fn [namespace]
-                                (let [name-str (-> namespace (get "name") bytes->string)
-                                      name-sym (symbol name-str)
-                                      vars (get namespace "vars")
-                                      vars (vars-fn name-str vars)]
-                                  [name-sym vars]))
+         pod-namespaces (mapv #(bencode->namespace pod %)
                               pod-namespaces)
          pod (assoc pod :namespaces pod-namespaces)]
      (swap! pods assoc pod-id pod)
      pod)))
+
+(defn load-ns [pod namespace]
+  (let [prom (promise)
+        chans (:chans pod)
+        id (next-id)
+        _ (swap! chans assoc id prom)]
+    (write (:stdin pod)
+           {"op" "load-ns"
+            "ns" (str namespace)
+            "id" id})
+    @prom))
 
 (defn invoke-public [pod-id fn-sym args opts]
   (let [pod (lookup-pod pod-id)]

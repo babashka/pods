@@ -346,6 +346,49 @@ In the pod client:
 nil
 ```
 
+#### Deferred namespace loading
+
+When your pod exposes multiple namespaces that can be used independently from
+each other, consider implementing the `load-ns` op which allows the pod client
+to load the namespace and process the client side code when it is loaded using
+`require`. This will speed up the initial setup of the pod in `load-pod`.
+
+In `describe` the pod will mark the namespaces as deferred:
+
+``` clojure
+{"name" "pod.lispyclouds.deferred-ns"
+ "defer" "true"}
+```
+
+When the user requires the namespace with `(require
+'[pod.lispyclouds.deferred-ns])` the pod client will then send a message:
+
+``` clojure
+{"op" "load-ns"
+ "ns" "pod.lispyclouds.deferred-ns"
+ "id  "..."}
+```
+
+upon which the pod will reply with the namespace data:
+
+``` clojure
+{"name" "pod.lispyclouds.deferred-ns"
+ "vars" [{"name" "myfunc" "code" "(defn my-func [])"}]
+ "id" "..."}
+```
+
+If a deferred namespace depends on another deferred namespace, provide explicit
+`require`s in `code` segments:
+
+``` clojure
+{"name" "pod.lispyclouds.another-deferred-ns"
+ "vars"
+ [{"name" "myfunc"
+   "code" "(require '[pod.lispyclouds.deferred-ns :as dns])
+           (defn my-func [] (dns/x))"}]
+ "id" "..."}
+```
+
 #### Async
 
 Asynchronous functions can be implemented using callbacks.
