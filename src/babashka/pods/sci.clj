@@ -40,12 +40,10 @@
                                       v)
                                v))))}))
              namespaces (:namespaces pod)
-             load? (contains? (:ops pod) :load-ns)
-             namespaces-to-load (when load?
-                                  (set (keep (fn [[ns-name _ lazy?]]
-                                               (when lazy?
-                                                 ns-name))
-                                               namespaces)))]
+             namespaces-to-load (set (keep (fn [[ns-name _ defer?]]
+                                             (when defer?
+                                               ns-name))
+                                           namespaces))]
          (when (seq namespaces-to-load)
            (let [load-fn (fn load-fn [{:keys [:namespace]}]
                            (when (contains? namespaces-to-load namespace)

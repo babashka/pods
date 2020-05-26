@@ -82,11 +82,10 @@
                                              "code" "(defn read-other-tag [x] [x x])"}]
                                            dependents)}
                              {"name" "pod.test-pod.loaded"
-                              "lazy" "true"}
+                              "defer" "true"}
                              {"name" "pod.test-pod.loaded2"
-                              "lazy" "true"}]
-                            "ops" {"shutdown" {}
-                                   "load-ns" {}}})
+                              "defer" "true"}]
+                            "ops" {"shutdown" {}}})
                     (recur))
                 :invoke (let [var (-> (get message "var")
                                       read-string

@@ -42,16 +42,14 @@
                               (intern
                                (create-ns (symbol (namespace sym)))
                                (symbol (name sym)))))})
-         namespaces (:namespaces pod)
-         load? (contains? (:ops pod) :load-ns)]
-     (when load?
-       (swap! namespaces-to-load
-              merge
-              (into {}
-                    (keep (fn [[ns-name _ lazy?]]
-                            (when lazy?
-                              [ns-name pod]))
-                          namespaces))))
+         namespaces (:namespaces pod)]
+     (swap! namespaces-to-load
+            merge
+            (into {}
+                  (keep (fn [[ns-name _ defer?]]
+                          (when defer?
+                            [ns-name pod]))
+                        namespaces)))
      (doseq [[ns-sym vars lazy?] namespaces
              :when (not lazy?)]
        (process-namespace {:name ns-sym :vars vars}))

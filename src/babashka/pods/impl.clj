@@ -189,8 +189,8 @@
         name-sym (symbol name-str)
         vars (get namespace "vars")
         vars (bencode->vars pod name-str vars)
-        lazy? (some-> namespace (get-maybe-string "lazy") (= "true"))]
-    [name-sym vars lazy?]))
+        defer? (some-> namespace (get-maybe-string "defer") (= "true"))]
+    [name-sym vars defer?]))
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
