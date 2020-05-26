@@ -351,7 +351,7 @@ nil
 When your pod exposes multiple namespaces that can be used independently from
 each other, consider implementing the `load-ns` op which allows the pod client
 to load the namespace and process the client side code when it is loaded using
-`require`. This will speed up the initial setup of the pod using `load-pod`.
+`require`. This will speed up the initial setup of the pod in `load-pod`.
 
 In `describe` the pod will mark the namespaces as deferred:
 
