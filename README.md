@@ -45,15 +45,14 @@ _below_ in Polish and Russian. In Romanian it means _bridge_
 
 Currently the following pods are available:
 
+- [babashka-sql-pods](https://github.com/babashka/babashka-sql-pods): pods for
+  interacting with SQL databases.
 - [bootleg](https://github.com/retrogradeorbit/bootleg): static HTML website
   generation.
 - [clj-kondo](https://github.com/borkdude/clj-kondo/#babashka-pod): a Clojure
   linter
 - [pod-babashka-filewatcher](https://github.com/babashka/pod-babashka-filewatcher): a
   filewatcher pod based on Rust notify.
-- [pod-babashka-hsqldb](https://github.com/babashka/pod-babashka-hsqldb): a pod
-  that allows you to create and fire queries at a
-  [HSQLDB](http://www.hsqldb.org/) database.
 - [pod-janet-peg](https://github.com/sogaiu/pod-janet-peg): a pod for
   calling [Janet](https://github.com/janet-lang/janet)'s PEG
   functionality
