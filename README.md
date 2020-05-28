@@ -1,6 +1,6 @@
 # babashka.pods
 
-Babashka pods are programs that can be used as Clojure libraries by bababshka.
+Babashka pods are programs that can be used as Clojure libraries by babashka.
 
 This is the library to load babashka pods. It is used by
 [babashka](https://github.com/borkdude/babashka/) but also usable from the JVM
