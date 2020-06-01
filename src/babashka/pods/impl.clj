@@ -80,8 +80,18 @@
         err-stream (:err pod)
         readers (:readers pod)
         read-fn (case format
-                  :edn #(edn/read-string {:readers readers} %)
-                  :json #(cheshire/parse-string-strict % true))]
+                  :edn (fn [s]
+                         (try (edn/read-string {:readers readers} s)
+                              (catch Exception e
+                                (binding [*out* *err*]
+                                  (println "Cannot read EDN: " (pr-str s))
+                                  (throw e)))))
+                  :json (fn [s]
+                          (try (cheshire/parse-string-strict s true)
+                               (catch Exception e
+                                 (binding [*out* *err*]
+                                   (println "Cannot read JSON: " (pr-str s))
+                                   (throw e))))))]
     (try
       (loop []
         (let [reply (try (read stdout)
