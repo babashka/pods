@@ -90,7 +90,7 @@ light weight replacement for native interop (JNI, JNA, etc.).
 Beyond the already available pods mentioned above, eductional examples of pods
 can be found [here](../examples/pods):
 
-- [pod-lispyclouds-sqlite](../examples/pods/pod-lispyclouds-sqlite): a pod that
+- [pod-lispyclouds-sqlite](examples/pod-lispyclouds-sqlite): a pod that
   allows you to create and fire queries at a [sqlite](https://www.sqlite.org/)
   database. Implemented in Python.
 
