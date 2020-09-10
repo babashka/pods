@@ -145,14 +145,11 @@ Bencode is chosen as the message format because it is a light-weight format
 which can be implemented in 200-300 lines of code in most languages. If pods are
 implemented in Clojure, they only need to depend on the
 [bencode](https://github.com/nrepl/bencode) library and use `pr-str` and
-`edn/read-string` for encoding and decoding payloads.
+`edn/read-string` for encoding and decoding payloads. 
 
-Why isn't EDN or JSON chosen as the message format instead of bencode, you may
-ask.  Assuming EDN or JSON as the message and payload format for all pods is too
-constraining: other languages might already have built-in JSON support and there
-might not be a good EDN library available. So we use bencode as the first
-encoding and choose one of multiple richer encodings on top of this. More
+So we use bencode as the first encoding and choose one of multiple richer encodings on top of this, similar to how the nREPL protocol is implemented. More
 payload formats might be added in the future (e.g. transit).
+Other languages typically use a bencode library + a JSON library to encode payloads.
 
 When calling the `babashka.pods/load-pod` function, the pod client will start
 the pod and leave the pod running throughout the duration of a babashka script.
