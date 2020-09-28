@@ -74,6 +74,8 @@
                                             {"name" "return-nil"}
                                             {"name" "do-twice"
                                              "code" "(defmacro do-twice [x] `(do ~x ~x))"}
+                                            {"name" "fn-call"
+                                             "code" "(defn fn-call [f x] (f x))"}
                                             {"name" "reader-tag"}
                                             ;; returns thing with other tag
                                             {"name" "other-tag"}

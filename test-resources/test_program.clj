@@ -46,6 +46,8 @@
 (def tagged (pod/reader-tag))
 (def other-tagged (pod/other-tag))
 
+(def fn-called (pod.test-pod/fn-call inc 2))
+
 (require '[pod.test-pod.loaded2 :as loaded2])
 (def loaded (loaded2/loaded 1))
 
@@ -67,4 +69,5 @@
  x9
  tagged
  other-tagged
- loaded]
+ loaded
+ fn-called]
