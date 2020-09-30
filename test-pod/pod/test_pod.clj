@@ -86,7 +86,10 @@
                              {"name" "pod.test-pod.loaded"
                               "defer" "true"}
                              {"name" "pod.test-pod.loaded2"
-                              "defer" "true"}]
+                              "defer" "true"}
+                             {"name" "pod.test-pod.only-code"
+                              "vars" [{"name" "foo"
+                                       "code" "(defn foo [] 1)"}]}]
                             "ops" {"shutdown" {}}})
                     (recur))
                 :invoke (let [var (-> (get message "var")

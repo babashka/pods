@@ -7,6 +7,10 @@
         ns-name name
         sci-ns (sci/create-ns (symbol ns-name))]
     (sci/binding [sci/ns sci-ns]
+      ;; ensure ns map in ctx, see #20
+      (swap! env update-in [:namespaces ns-name]
+             (fn [ns-map]
+               (if ns-map ns-map {:obj sci-ns})))
       (doseq [[var-name var-value] vars]
         (cond (ifn? var-value)
               (swap! env assoc-in [:namespaces ns-name var-name]

@@ -119,9 +119,11 @@
                                  read-fn)
                          {})])
                   namespace (when-let [v (get reply "vars")]
-                              (let [name (-> (get reply "name")
-                                             bytes->string)]
-                                {:name name :vars (bencode->vars pod name v)}))
+                              (let [name-str (-> (get reply "name")
+                                                 bytes->string)
+                                    name (symbol name-str)]
+                                {:name name
+                                 :vars (bencode->vars pod name-str v)}))
                   chan (get @chans id)
                   promise? (instance? clojure.lang.IPending chan)
                   exception (when (and promise? error?)

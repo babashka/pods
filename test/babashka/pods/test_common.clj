@@ -22,7 +22,8 @@
                         [1 2 3]
                         [[1] [1]]
                         2
-                        3]
+                        3
+                        1]
                (concat ret (repeat ::nil)))]
     (if (instance? java.util.regex.Pattern expected)
       (is (re-find expected actual))

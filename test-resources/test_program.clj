@@ -48,6 +48,9 @@
 
 (def fn-called (pod.test-pod/fn-call inc 2))
 
+(require '[pod.test-pod.only-code :as only-code])
+(def should-be-1 (only-code/foo))
+
 (require '[pod.test-pod.loaded2 :as loaded2])
 (def loaded (loaded2/loaded 1))
 
@@ -70,4 +73,5 @@
  tagged
  other-tagged
  loaded
- fn-called]
+ fn-called
+ should-be-1]

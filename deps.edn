@@ -3,7 +3,8 @@
  :aliases
  {:sci
   {:extra-deps
-   {borkdude/sci {:mvn/version "0.0.13-alpha.27"}}}
+   {borkdude/sci {:git/url "https://github.com/borkdude/sci"
+                  :sha "a7f8d05f08ab150621c2403dacdd57c47ea09ff4"}}}
   :test
   {:extra-deps
    {test-runner
