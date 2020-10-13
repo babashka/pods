@@ -228,7 +228,7 @@
           (recur))))))
 
 (defn read-port [pid]
-  (loop []
+  1888 #_(loop []
     (let [f (io/file (str ".babashka/pods/" pid ".port"))]
       (if (.exists f)
         (edn/read-string (slurp f))
@@ -236,20 +236,23 @@
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec {:keys [:remove-ns :resolve :socket]}]
+  ([pod-spec {:keys [:remove-ns :resolve :socket :inherit-io]}]
    (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
-         _ (if socket
+         _ (if inherit-io
              (.inheritIO pb)
              (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
          _ (doto (.environment pb)
              (.put "BABASHKA_POD" "true"))
          p (.start pb)
          pid (.pid p)
-         port (when socket (read-port pid))
-         stdin (.getOutputStream p)
-         stdout (.getInputStream p)
-         stdout (java.io.PushbackInputStream. stdout)
+         socket-port (when socket (read-port pid))
+         [stdin stdout _gobbler]
+         (if socket
+           (let [socket (create-socket "localhost" socket-port)]
+             [(.getOutputStream socket)
+              (PushbackInputStream. (.getInputStream socket))])
+           [(.getOutputStream p) (java.io.PushbackInputStream. (.getInputStream p))])
          _ (write stdin {"op" "describe"
                          "id" (next-id)})
          reply (read stdout)
@@ -257,14 +260,6 @@
          ops (some->> (get reply "ops") keys (map keyword) set)
          readers (when (identical? :edn format)
                    (read-readers reply resolve))
-         socket-port (get reply "port")
-         [stdin stdout _gobbler]
-         (if socket-port
-           (let [socket (create-socket "localhost" socket-port)]
-             [(.getOutputStream socket)
-              (PushbackInputStream. (.getInputStream socket))
-              (gobbler stdout)])
-           [stdin stdout])
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
