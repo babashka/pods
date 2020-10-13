@@ -227,15 +227,26 @@
           (print (char v))
           (recur))))))
 
+(defn read-port [pid]
+  (loop []
+    (let [f (io/file (str ".babashka/pods/" pid ".port"))]
+      (if (.exists f)
+        (edn/read-string (slurp f))
+        (recur)))))
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec {:keys [:remove-ns :resolve]}]
+  ([pod-spec {:keys [:remove-ns :resolve :socket]}]
    (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
-         _ (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT)
+         _ (if socket
+             (.inheritIO pb)
+             (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
          _ (doto (.environment pb)
              (.put "BABASHKA_POD" "true"))
          p (.start pb)
+         pid (.pid p)
+         port (when socket (read-port pid))
          stdin (.getOutputStream p)
          stdout (.getInputStream p)
          stdout (java.io.PushbackInputStream. stdout)
