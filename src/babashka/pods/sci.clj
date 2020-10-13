@@ -23,26 +23,28 @@
   (with-meta
     (fn
       ([ctx pod-spec] (load-pod ctx pod-spec nil))
-      ([ctx pod-spec _opts]
+      ([ctx pod-spec opts]
        (let [env (:env ctx)
              pod (binding [*out* @sci/out
                            *err* @sci/err]
                    (impl/load-pod
                     pod-spec
-                    {:remove-ns
-                     (fn [sym]
-                       (swap! env update :namespaces dissoc sym))
-                     :resolve
-                     (fn [sym]
-                       (let [sym-ns (or (some-> (namespace sym)
-                                                symbol)
-                                        'clojure.core)
-                             sym-name (symbol (name sym))]
-                         (or (get-in @env [:namespaces sym-ns sym-name])
-                             (let [v (sci/new-var sym {:predefined true})]
-                               (swap! env assoc-in [:namespaces sym-ns sym-name]
-                                      v)
-                               v))))}))
+                    (merge
+                     {:remove-ns
+                      (fn [sym]
+                        (swap! env update :namespaces dissoc sym))
+                      :resolve
+                      (fn [sym]
+                        (let [sym-ns (or (some-> (namespace sym)
+                                                 symbol)
+                                         'clojure.core)
+                              sym-name (symbol (name sym))]
+                          (or (get-in @env [:namespaces sym-ns sym-name])
+                              (let [v (sci/new-var sym {:predefined true})]
+                                (swap! env assoc-in [:namespaces sym-ns sym-name]
+                                       v)
+                                v))))}
+                     opts)))
              namespaces (:namespaces pod)
              namespaces-to-load (set (keep (fn [[ns-name _ defer?]]
                                              (when defer?

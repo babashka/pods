@@ -33,15 +33,16 @@
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec _opts]
+  ([pod-spec opts]
    (let [pod (impl/load-pod
               pod-spec
-              {:remove-ns remove-ns
-               :resolve (fn [sym]
-                          (or (resolve sym)
-                              (intern
-                               (create-ns (symbol (namespace sym)))
-                               (symbol (name sym)))))})
+              (merge {:remove-ns remove-ns
+                      :resolve (fn [sym]
+                                 (or (resolve sym)
+                                     (intern
+                                      (create-ns (symbol (namespace sym)))
+                                      (symbol (name sym)))))}
+                     opts))
          namespaces (:namespaces pod)]
      (swap! namespaces-to-load
             merge
