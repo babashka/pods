@@ -3,7 +3,10 @@
   (:refer-clojure :exclude [read])
   (:require [bencode.core :as bencode]
             [cheshire.core :as cheshire]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [clojure.java.io :as io])
+  (:import [java.io PushbackInputStream]
+           [java.net Socket]))
 
 (set! *warn-on-reflection* true)
 
@@ -204,6 +207,26 @@
         defer? (some-> namespace (get-maybe-string "defer") (= "true"))]
     [name-sym vars defer?]))
 
+(defn create-socket
+  "Connect a socket to a remote host. The call blocks until
+   the socket is connected."
+  ^Socket
+  [^String hostname ^Integer port]
+  (Socket. hostname port))
+
+(defn close-socket
+  "Close the socket, and also closes its input and output streams."
+  [^Socket socket]
+  (.close socket))
+
+(defn gobbler [^java.io.InputStream is]
+  (future
+    (loop []
+      (let [v (.read is)]
+        (when-not (= -1 v)
+          (print (char v))
+          (recur))))))
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec {:keys [:remove-ns :resolve]}]
@@ -223,6 +246,14 @@
          ops (some->> (get reply "ops") keys (map keyword) set)
          readers (when (identical? :edn format)
                    (read-readers reply resolve))
+         socket-port (get reply "port")
+         [stdin stdout _gobbler]
+         (if socket-port
+           (let [socket (create-socket "localhost" socket-port)]
+             [(.getOutputStream socket)
+              (PushbackInputStream. (.getInputStream socket))
+              (gobbler stdout)])
+           [stdin stdout])
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
