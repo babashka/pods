@@ -4,7 +4,8 @@
   (:require [bencode.core :as bencode]
             [cheshire.core :as cheshire]
             [clojure.edn :as edn]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.string :as str])
   (:import [java.io PushbackInputStream]
            [java.net Socket]))
 
@@ -219,26 +220,32 @@
   [^Socket socket]
   (.close socket))
 
-(defn read-port [pid]
-  1888 #_(loop []
-    (let [f (io/file (str ".babashka/pods/" pid ".port"))]
-      (if (.exists f)
-        (edn/read-string (slurp f))
-        (recur)))))
+(defn port-file [pid]
+  (io/file (str ".babashka-pod-" pid ".port")))
+
+(defn read-port [^java.io.File port-file]
+  (time (loop []
+          (let [f port-file]
+            (if-let [s (when (.exists f)
+                         (let [s (slurp f)]
+                           (when (str/ends-with? s "\n")
+                             (str/trim s))))]
+              (Integer. s)
+              (recur))))))
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec {:keys [:remove-ns :resolve :socket :inherit-io]}]
+  ([pod-spec {:keys [:remove-ns :resolve :socket]}]
    (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
-         _ (if inherit-io
+         _ (if socket
              (.inheritIO pb)
              (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
          _ (doto (.environment pb)
              (.put "BABASHKA_POD" "true"))
          p (.start pb)
-         pid (.pid p)
-         socket-port (when socket (read-port pid))
+         port-file (when socket (port-file (.pid p)))
+         socket-port (when socket (read-port port-file))
          [stdin stdout]
          (if socket
            (let [^Socket socket
