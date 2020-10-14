@@ -224,14 +224,14 @@
   (io/file (str ".babashka-pod-" pid ".port")))
 
 (defn read-port [^java.io.File port-file]
-  (time (loop []
-          (let [f port-file]
-            (if-let [s (when (.exists f)
-                         (let [s (slurp f)]
-                           (when (str/ends-with? s "\n")
-                             (str/trim s))))]
-              (Integer. s)
-              (recur))))))
+  (loop []
+    (let [f port-file]
+      (if-let [s (when (.exists f)
+                   (let [s (slurp f)]
+                     (when (str/ends-with? s "\n")
+                       (str/trim s))))]
+        (Integer. s)
+        (recur)))))
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
