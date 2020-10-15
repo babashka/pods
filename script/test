@@ -27,4 +27,3 @@ BABASHKA_POD_TEST_SOCKET=true
 echo "Testing socket"
 clojure -A:test -n babashka.pods.jvm-test
 clojure -A:sci:test -n babashka.pods.sci-test
-

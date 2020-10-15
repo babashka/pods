@@ -203,7 +203,9 @@
       (.destroy ^Process (:process pod)))
     (when-let [rns (:remove-ns pod)]
       (doseq [[ns-name _] (:namespaces pod)]
-        (rns ns-name)))))
+        (rns ns-name))))
+  (swap! pods dissoc pod-id)
+  nil)
 
 (def next-pod-id
   (let [counter (atom 0)]
@@ -298,14 +300,14 @@
               :err *err*
               :remove-ns remove-ns
               :readers readers}
-         _ (add-shutdown-hook! #(do
-                                  (when socket
-                                    (close-socket socket))
-                                  (destroy pod)))
          pod-namespaces (get reply "namespaces")
          pod-id (or (when-let [ns (first pod-namespaces)]
                       (get-string ns "name"))
                     (next-id))
+         _ (add-shutdown-hook! #(do
+                                  (when socket
+                                    (close-socket socket))
+                                  (destroy pod-id)))
          pod (assoc pod :pod-id pod-id)
          pod-namespaces (mapv #(bencode->namespace pod %)
                               pod-namespaces)
