@@ -24,7 +24,7 @@ babashka is the pod client. When a JVM invokes a pod, the JVM is the pod client.
 - _message_: a message sent from the pod client to the pod or vice versa,
   encoded in [bencode](https://en.wikipedia.org/wiki/Bencode) format.
 - _payload_: a particular field of a _message_ encoded in a _payload format_
-  (currently only JSON or EDN). Examples are `args`, `value` and `ex-data`.  _
+  (currently JSON, EDN or Transit JSON). Examples are `args`, `value` and `ex-data`.  _
 -  _pod protocol_: the documented way of exchanging messages between a _pod
   client_ and _pod_.
 
@@ -136,19 +136,19 @@ format that only has four types:
 - byte strings
 
 Additionally, _payloads_ like `args` (arguments) or `value` (a function return
-value) are encoded in either JSON or EDN.
+value) are encoded in either EDN, JSON or Transit JSON.
 
 So remember: messages are in bencode, payloads (particular fields in the
-message) are in either JSON or EDN.
+message) are in either EDN, JSON or Transit JSON.
 
 Bencode is chosen as the message format because it is a light-weight format
 which can be implemented in 200-300 lines of code in most languages. If pods are
 implemented in Clojure, they only need to depend on the
 [bencode](https://github.com/nrepl/bencode) library and use `pr-str` and
-`edn/read-string` for encoding and decoding payloads. 
+`edn/read-string` for encoding and decoding payloads.
 
 So we use bencode as the first encoding and choose one of multiple richer encodings on top of this, similar to how the nREPL protocol is implemented. More
-payload formats might be added in the future (e.g. transit).
+payload formats might be added in the future.
 Other languages typically use a bencode library + a JSON library to encode payloads.
 
 When calling the `babashka.pods/load-pod` function, the pod client will start
@@ -169,7 +169,7 @@ Encoded in bencode this looks like:
 ;;=> d2:op8:describee
 ```
 
-The pod should reply to this request with a message in the vein of:
+The pod should reply to this request with a message similar to:
 
 ``` clojure
 {"format" "json"
@@ -182,6 +182,8 @@ The pod should reply to this request with a message in the vein of:
 In this reply, the pod declares that payloads will be encoded and decoded using
 JSON. It also declares that the pod exposes one namespace,
 `pod.lispyclouds.sqlite` with one var `execute!`.
+
+To encode payloads in EDN use `"edn"` and for Transit JSON use `"transit+json"`.
 
 The pod encodes the above map to bencode and writes it to stdoud. The pod client
 reads this message from the pod's stdout.
@@ -209,8 +211,8 @@ As a pod user, you can load the pod with:
 #### invoke
 
 When invoking a var that is related to the pod, let's call it a _proxy var_, the
-pod client reaches out to the pod with the arguments encoded in JSON or EDN. The
-pod will then respond with a return value encoded in JSON or EDN. The pod client
+pod client reaches out to the pod with the arguments encoded in EDN, JSON or Transit JSON. The
+pod will then respond with a return value encoded in EDN, JSON or Transit JSON. The pod client
 will then decode the return value and present the user with that.
 
 Example: the user invokes `(sql/execute! "select * from foo")`. The pod client
