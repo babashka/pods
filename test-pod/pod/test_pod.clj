@@ -3,7 +3,8 @@
   (:require [bencode.core :as bencode]
             [cheshire.core :as cheshire]
             [clojure.edn :as edn]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [cognitect.transit :as transit])
   (:import [java.io PushbackInputStream]
            [java.net ServerSocket])
   (:gen-class))
@@ -33,16 +34,29 @@
        (format "(def x%s (inc x%s))" i (dec i))
        "(def x0 0)")}))
 
+(defn transit-json-read [^String s]
+  (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
+    (let [r (transit/reader bais :json)]
+      (transit/read r))))
+
+(defn transit-json-write [^String s]
+  (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
+    (let [w (transit/writer baos :json)]
+      (transit/write w s)
+      (str baos))))
+
 (defn run-pod [cli-args]
-  (let [format (if (contains? cli-args "--json")
-                 :json
-                 :edn)
-        write-fn (if (identical? :json format)
-                   cheshire/generate-string
-                   pr-str)
-        read-fn (if (identical? :json format)
-                  #(cheshire/parse-string % true)
-                  edn/read-string)
+  (let [format (cond (contains? cli-args "--json") :json
+                     (contains? cli-args "--transit+json") :transit+json
+                     :else :edn)
+        write-fn (case format
+                   :edn pr-str
+                   :json cheshire/generate-string
+                   :transit+json transit-json-write)
+        read-fn (case format
+                  :edn edn/read-string
+                  :json #(cheshire/parse-string % true)
+                  :transit+json transit-json-read)
         socket (= "true" (System/getenv "BABASHKA_POD_SOCKET"))
         [in out] (if socket
                    (let [server (ServerSocket. 0)
@@ -70,9 +84,10 @@
                   op (keyword op)]
               (case op
                 :describe
-                (do (write out {"format" (if (= format :json)
-                                           "json"
-                                           "edn")
+                (do (write out {"format" (case format
+                                           :edn "edn"
+                                           :json "json"
+                                           :transit+json "transit+json")
                                 "readers" {"my/tag" "identity"
                                            ;; NOTE: this function is defined later,
                                            ;; which should be supported
@@ -209,5 +224,7 @@
           (prn e))))))
 
 (defn -main [& args]
+  #_(binding [*out* *err*]
+    (prn :args args))
   (when (= "true" (System/getenv "BABASHKA_POD"))
     (run-pod (set args))))

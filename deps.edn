@@ -1,5 +1,6 @@
 {:deps {nrepl/bencode {:mvn/version "1.1.0"}
-        cheshire {:mvn/version "5.10.0"}}
+        cheshire/cheshire {:mvn/version "5.10.0"}
+        com.cognitect/transit-clj {:mvn/version "1.0.324"}}
  :aliases
  {:sci
   {:extra-deps
@@ -7,7 +8,7 @@
                   :sha "a7f8d05f08ab150621c2403dacdd57c47ea09ff4"}}}
   :test
   {:extra-deps
-   {test-runner
+   {cognitect/test-runner
     {:git/url "https://github.com/cognitect-labs/test-runner"
      :sha "cb96e80f6f3d3b307c59cbeb49bb0dcb3a2a780b"}}
    :extra-paths ["test"]

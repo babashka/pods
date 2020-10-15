@@ -5,7 +5,8 @@
             [cheshire.core :as cheshire]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [cognitect.transit :as transit])
   (:import [java.io PushbackInputStream]
            [java.net Socket]))
 
@@ -37,6 +38,17 @@
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
 
+(defn transit-json-read [^String s]
+  (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
+    (let [r (transit/reader bais :json)]
+      (transit/read r))))
+
+(defn transit-json-write [^String s]
+  (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
+    (let [w (transit/writer baos :json)]
+      (transit/write w s)
+      (str baos))))
+
 (defn invoke [pod pod-var args opts]
   (let [handlers (:handlers opts)
         stream (:stdin pod)
@@ -44,7 +56,8 @@
         chans (:chans pod)
         write-fn (case format
                    :edn pr-str
-                   :json cheshire/generate-string)
+                   :json cheshire/generate-string
+                   :transit+json transit-json-write)
         id (next-id)
         chan (if handlers handlers
                  (promise))
@@ -95,7 +108,14 @@
                                (catch Exception e
                                  (binding [*out* *err*]
                                    (println "Cannot read JSON: " (pr-str s))
-                                   (throw e))))))]
+                                   (throw e)))))
+                  :transit+json
+                  (fn [s]
+                    (try (transit-json-read s)
+                         (catch Exception e
+                           (binding [*out* *err*]
+                             (println "Cannot read Transit JSON: " (pr-str s))
+                             (throw e))))))]
     (try
       (loop []
         (let [reply (try (read stdout)

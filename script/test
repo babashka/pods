@@ -5,17 +5,26 @@ export BABASHKA_POD_TEST_SOCKET
 
 # format = edn
 BABASHKA_POD_TEST_FORMAT=edn
+echo "Testing edn"
 clojure -A:test -n babashka.pods.jvm-test
 clojure -A:sci:test -n babashka.pods.sci-test
 
 # format = json
 BABASHKA_POD_TEST_FORMAT=json
+echo "Testing json"
+clojure -A:test -n babashka.pods.jvm-test
+clojure -A:sci:test -n babashka.pods.sci-test
+
+# format = json
+BABASHKA_POD_TEST_FORMAT="transit+json"
+echo "Testing transit"
 clojure -A:test -n babashka.pods.jvm-test
 clojure -A:sci:test -n babashka.pods.sci-test
 
 # socket = true
 unset BABASHKA_POD_TEST_FORMAT
 BABASHKA_POD_TEST_SOCKET=true
+echo "Testing socket"
 clojure -A:test -n babashka.pods.jvm-test
 clojure -A:sci:test -n babashka.pods.sci-test
 
