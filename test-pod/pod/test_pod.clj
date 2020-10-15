@@ -153,7 +153,7 @@
                             (write
                              {"status" ["done"]
                               "id" id
-                              "value" "nil"})
+                              "value" (write-fn nil)})
                             pod.test-pod/reader-tag
                             (write
                              {"status" ["done"]

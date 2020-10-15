@@ -14,5 +14,6 @@
                {:namespaces {'babashka.pods
                              {'load-pod pods/load-pod
                               'invoke pods/invoke
-                              'unload-pod pods/unload-pod}}}))]
+                              'unload-pod pods/unload-pod}}
+                :classes {'System System}}))]
     (assertions out err ret)))

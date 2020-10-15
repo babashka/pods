@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
+# format = edn
 clojure -A:test -n babashka.pods.jvm-test
-#clojure -A:test:kaocha --focus babashka.pods.jvm-test
-
 clojure -A:sci:test -n babashka.pods.sci-test
-#clojure -A:sci:test:kaocha --focus babashka.pods.sci-test
+
+# format = json
+export BABASHKA_POD_TEST_FORMAT
+BABASHKA_POD_TEST_FORMAT=json
+clojure -A:test -n babashka.pods.jvm-test
+clojure -A:sci:test -n babashka.pods.sci-test

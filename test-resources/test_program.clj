@@ -1,5 +1,10 @@
 (require '[babashka.pods :as pods])
-(def pod-id (:pod/id (pods/load-pod ["clojure" "-A:test-pod"])))
+
+(def fmt (or (System/getenv "BABASHKA_POD_TEST_FORMAT")
+             "edn"))
+
+(def pod-id (:pod/id (pods/load-pod (cond-> ["clojure" "-A:test-pod"]
+                                      (= "json" fmt) (conj "--json")))))
 (require '[pod.test-pod :as pod])
 (def pod-ns-name (ns-name (find-ns 'pod.test-pod)))
 
@@ -43,8 +48,14 @@
 
 (def x9 pod.test-pod/x9)
 
-(def tagged (pod/reader-tag))
-(def other-tagged (pod/other-tag))
+(def tagged (if (= "edn" fmt)
+              (pod/reader-tag)
+              [1 2 3]))
+
+(def other-tagged
+  (if (= "edn" fmt)
+    (pod/other-tag)
+    [[1] [1]]))
 
 (def fn-called (pod.test-pod/fn-call inc 2))
 
