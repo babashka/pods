@@ -4,7 +4,8 @@
             [cheshire.core :as cheshire]
             [clojure.edn :as edn]
             [clojure.java.io :as io])
-  (:import [java.io PushbackInputStream])
+  (:import [java.io PushbackInputStream]
+           [java.net ServerSocket])
   (:gen-class))
 
 (def debug? false)
@@ -14,17 +15,15 @@
     (binding [*out* (io/writer "/tmp/log.txt" :append true)]
       (apply println args))))
 
-(def stdin (PushbackInputStream. System/in))
-
-(defn write [v]
-  (bencode/write-bencode System/out v)
-  (.flush System/out))
+(defn write [stream v]
+  (bencode/write-bencode stream v)
+  (flush))
 
 (defn read-string [^"[B" v]
   (String. v))
 
-(defn read []
-  (bencode/read-bencode stdin))
+(defn read [stream]
+  (bencode/read-bencode stream))
 
 (def dependents
   (for [i (range 10)]
@@ -43,10 +42,26 @@
                    pr-str)
         read-fn (if (identical? :json format)
                   #(cheshire/parse-string % true)
-                  edn/read-string)]
+                  edn/read-string)
+        socket (= "true" (System/getenv "BABASHKA_POD_SOCKET"))
+        [in out] (if socket
+                   (let [server (ServerSocket. 0)
+                         port (.getLocalPort server)
+                         pid (.pid (java.lang.ProcessHandle/current))
+                         port-file (io/file (str ".babashka-pod-" pid ".port"))
+                         _ (.addShutdownHook (Runtime/getRuntime)
+                                             (Thread. (fn [] (.delete port-file))))
+                         _ (spit port-file
+                                 (str port "\n"))
+                         socket (.accept server)
+                         in (PushbackInputStream. (.getInputStream socket))
+                         out (.getOutputStream socket)]
+                     [in out])
+                   [(PushbackInputStream. System/in)
+                    System/out])]
     (try
       (loop []
-        (let [message (try (read)
+        (let [message (try (read in)
                            (catch java.io.EOFException _
                              ::EOF))]
           (when-not (identical? ::EOF message)
@@ -55,42 +70,42 @@
                   op (keyword op)]
               (case op
                 :describe
-                (do (write {"format" (if (= format :json)
-                                       "json"
-                                       "edn")
-                            "readers" {"my/tag" "identity"
-                                       ;; NOTE: this function is defined later,
-                                       ;; which should be supported
-                                       "my/other-tag" "pod.test-pod/read-other-tag"}
-                            "namespaces"
-                            [{"name" "pod.test-pod"
-                              "vars" (into [{"name" "add-sync"}
-                                            {"name" "range-stream"
-                                             "async" "true"}
-                                            {"name" "assoc"}
-                                            {"name" "error"}
-                                            {"name" "print"}
-                                            {"name" "print-err"}
-                                            {"name" "return-nil"}
-                                            {"name" "do-twice"
-                                             "code" "(defmacro do-twice [x] `(do ~x ~x))"}
-                                            {"name" "fn-call"
-                                             "code" "(defn fn-call [f x] (f x))"}
-                                            {"name" "reader-tag"}
-                                            ;; returns thing with other tag
-                                            {"name" "other-tag"}
-                                            ;; reads thing with other tag
-                                            {"name" "read-other-tag"
-                                             "code" "(defn read-other-tag [x] [x x])"}]
-                                           dependents)}
-                             {"name" "pod.test-pod.loaded"
-                              "defer" "true"}
-                             {"name" "pod.test-pod.loaded2"
-                              "defer" "true"}
-                             {"name" "pod.test-pod.only-code"
-                              "vars" [{"name" "foo"
-                                       "code" "(defn foo [] 1)"}]}]
-                            "ops" {"shutdown" {}}})
+                (do (write out {"format" (if (= format :json)
+                                           "json"
+                                           "edn")
+                                "readers" {"my/tag" "identity"
+                                           ;; NOTE: this function is defined later,
+                                           ;; which should be supported
+                                           "my/other-tag" "pod.test-pod/read-other-tag"}
+                                "namespaces"
+                                [{"name" "pod.test-pod"
+                                  "vars" (into [{"name" "add-sync"}
+                                                {"name" "range-stream"
+                                                 "async" "true"}
+                                                {"name" "assoc"}
+                                                {"name" "error"}
+                                                {"name" "print"}
+                                                {"name" "print-err"}
+                                                {"name" "return-nil"}
+                                                {"name" "do-twice"
+                                                 "code" "(defmacro do-twice [x] `(do ~x ~x))"}
+                                                {"name" "fn-call"
+                                                 "code" "(defn fn-call [f x] (f x))"}
+                                                {"name" "reader-tag"}
+                                                ;; returns thing with other tag
+                                                {"name" "other-tag"}
+                                                ;; reads thing with other tag
+                                                {"name" "read-other-tag"
+                                                 "code" "(defn read-other-tag [x] [x x])"}]
+                                               dependents)}
+                                 {"name" "pod.test-pod.loaded"
+                                  "defer" "true"}
+                                 {"name" "pod.test-pod.loaded2"
+                                  "defer" "true"}
+                                 {"name" "pod.test-pod.only-code"
+                                  "vars" [{"name" "foo"
+                                           "code" "(defn foo [] 1)"}]}]
+                                "ops" {"shutdown" {}}})
                     (recur))
                 :invoke (let [var (-> (get message "var")
                                       read-string
@@ -104,12 +119,12 @@
                           (case var
                             pod.test-pod/add-sync
                             (try (let [ret (apply + args)]
-                                   (write
+                                   (write out
                                     {"value" (write-fn ret)
                                      "id" id
                                      "status" ["done"]}))
                                  (catch Exception e
-                                   (write
+                                   (write out
                                     {"ex-data" (write-fn {:args args})
                                      "ex-message" (.getMessage e)
                                      "status" ["done" "error"]
@@ -117,50 +132,50 @@
                             pod.test-pod/range-stream
                             (let [rng (apply range args)]
                               (doseq [v rng]
-                                (write
+                                (write out
                                  {"value" (write-fn v)
                                   "id" id})
                                 (Thread/sleep 100))
-                              (write
+                              (write out
                                {"status" ["done"]
                                 "id" id}))
                             pod.test-pod/assoc
-                            (write
+                            (write out
                              {"value" (write-fn (apply assoc args))
                               "status" ["done"]
                               "id" id})
                             pod.test-pod/error
-                            (write
+                            (write out
                              {"ex-data" (write-fn {:args args})
                               "ex-message" (str "Illegal arguments")
                               "status" ["done" "error"]
                               "id" id})
                             pod.test-pod/print
-                            (do (write
+                            (do (write out
                                  {"out" (pr-str args)
                                   "id" id})
-                                (write
+                                (write out
                                  {"status" ["done"]
                                   "id" id}))
                             pod.test-pod/print-err
-                            (do (write
+                            (do (write out
                                  {"err" (pr-str args)
                                   "id" id})
-                                (write
+                                (write out
                                  {"status" ["done"]
                                   "id" id}))
                             pod.test-pod/return-nil
-                            (write
+                            (write out
                              {"status" ["done"]
                               "id" id
                               "value" (write-fn nil)})
                             pod.test-pod/reader-tag
-                            (write
+                            (write out
                              {"status" ["done"]
                               "id" id
                               "value" "#my/tag[1 2 3]"})
                             pod.test-pod/other-tag
-                            (write
+                            (write out
                              {"status" ["done"]
                               "id" id
                               "value" "#my/other-tag[1]"}))
@@ -173,14 +188,14 @@
                                       read-string)]
                            (case ns
                              pod.test-pod.loaded
-                             (write
+                             (write out
                               {"status" ["done"]
                                "id" id
                                "name" "pod.test-pod.loaded"
                                "vars" [{"name" "loaded"
                                         "code" "(defn loaded [x] (inc x))"}]})
                              pod.test-pod.loaded2
-                             (write
+                             (write out
                               {"status" ["done"]
                                "id" id
                                "name" "pod.test-pod.loaded2"

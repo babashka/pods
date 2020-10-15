@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 
+export BABASHKA_POD_TEST_FORMAT
+export BABASHKA_POD_TEST_SOCKET
+
 # format = edn
+BABASHKA_POD_TEST_FORMAT=edn
 clojure -A:test -n babashka.pods.jvm-test
 clojure -A:sci:test -n babashka.pods.sci-test
 
 # format = json
-export BABASHKA_POD_TEST_FORMAT
 BABASHKA_POD_TEST_FORMAT=json
 clojure -A:test -n babashka.pods.jvm-test
 clojure -A:sci:test -n babashka.pods.sci-test
+
+# socket = true
+unset BABASHKA_POD_TEST_FORMAT
+BABASHKA_POD_TEST_SOCKET=true
+clojure -A:test -n babashka.pods.jvm-test
+clojure -A:sci:test -n babashka.pods.sci-test
+

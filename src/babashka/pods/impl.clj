@@ -242,11 +242,12 @@
              (.inheritIO pb)
              (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
          _ (doto (.environment pb)
-             (.put "BABASHKA_POD" "true"))
+             (.put "BABASHKA_POD" "true")
+             (.put "BABASHKA_POD_SOCKET" (some-> socket str)))
          p (.start pb)
          port-file (when socket (port-file (.pid p)))
          socket-port (when socket (read-port port-file))
-         [stdin stdout]
+         [socket stdin stdout]
          (if socket
            (let [^Socket socket
                  (loop []
@@ -255,9 +256,10 @@
                                         nil))]
                      sock
                      (recur)))]
-             [(.getOutputStream socket)
+             [socket
+              (.getOutputStream socket)
               (PushbackInputStream. (.getInputStream socket))])
-           [(.getOutputStream p) (java.io.PushbackInputStream. (.getInputStream p))])
+           [nil (.getOutputStream p) (java.io.PushbackInputStream. (.getInputStream p))])
          _ (write stdin {"op" "describe"
                          "id" (next-id)})
          reply (read stdout)
@@ -276,7 +278,10 @@
               :err *err*
               :remove-ns remove-ns
               :readers readers}
-         _ (add-shutdown-hook! #(destroy pod))
+         _ (add-shutdown-hook! #(do
+                                  (when socket
+                                    (close-socket socket))
+                                  (destroy pod)))
          pod-namespaces (get reply "namespaces")
          pod-id (or (when-let [ns (first pod-namespaces)]
                       (get-string ns "name"))
