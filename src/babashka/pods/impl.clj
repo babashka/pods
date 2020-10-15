@@ -255,6 +255,10 @@
         (Integer. s)
         (recur)))))
 
+(defn debug [& strs]
+  (binding [*out* *err*]
+    (println (str/join " " (map pr-str strs)))))
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec {:keys [:remove-ns :resolve :socket]}]
@@ -263,9 +267,9 @@
          _ (if socket
              (.inheritIO pb)
              (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
-         _ (doto (.environment pb)
-             (.put "BABASHKA_POD" "true")
-             (.put "BABASHKA_POD_SOCKET" (some-> socket str)))
+         _ (cond-> (doto (.environment pb)
+                     (.put "BABASHKA_POD" "true"))
+             socket (.put "BABASHKA_POD_SOCKET" "true"))
          p (.start pb)
          port-file (when socket (port-file (.pid p)))
          socket-port (when socket (read-port port-file))
