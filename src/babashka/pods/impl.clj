@@ -190,22 +190,28 @@
 
 (def pods (atom {}))
 
+(defn get-pod-id [x]
+  (if (map? x)
+    (:pod/id x)
+    x))
+
 (defn lookup-pod [pod-id]
   (get @pods pod-id))
 
-(defn destroy [pod-id]
-  (when-let [pod (lookup-pod pod-id)]
-    (if (contains? (:ops pod) :shutdown)
-      (do (write (:stdin pod)
-                 {"op" "shutdown"
-                  "id" (next-id)})
-          (.waitFor ^Process (:process pod)))
-      (.destroy ^Process (:process pod)))
-    (when-let [rns (:remove-ns pod)]
-      (doseq [[ns-name _] (:namespaces pod)]
-        (rns ns-name))))
-  (swap! pods dissoc pod-id)
-  nil)
+(defn destroy [pod-id-or-pod]
+  (let [pod-id (get-pod-id pod-id-or-pod)]
+    (when-let [pod (lookup-pod pod-id)]
+      (if (contains? (:ops pod) :shutdown)
+        (do (write (:stdin pod)
+                   {"op" "shutdown"
+                    "id" (next-id)})
+            (.waitFor ^Process (:process pod)))
+        (.destroy ^Process (:process pod)))
+      (when-let [rns (:remove-ns pod)]
+        (doseq [[ns-name _] (:namespaces pod)]
+          (rns ns-name))))
+    (swap! pods dissoc pod-id)
+    nil))
 
 (def next-pod-id
   (let [counter (atom 0)]
@@ -332,8 +338,9 @@
     @prom))
 
 (defn invoke-public [pod-id fn-sym args opts]
-  (let [pod (lookup-pod pod-id)]
+  (let [pod-id (get-pod-id pod-id)
+        pod (lookup-pod pod-id)]
     (invoke pod fn-sym args opts)))
 
-(defn unload-pod [pod-id]
-  (destroy pod-id))
+(defn unload-pod [pod-id-or-pod]
+  (destroy pod-id-or-pod))
