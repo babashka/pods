@@ -57,7 +57,7 @@
                   :edn edn/read-string
                   :json #(cheshire/parse-string % true)
                   :transit+json transit-json-read)
-        socket (= "true" (System/getenv "BABASHKA_POD_SOCKET"))
+        socket (= "socket" (System/getenv "BABASHKA_POD_TRANSPORT"))
         [in out] (if socket
                    (let [server (ServerSocket. 0)
                          port (.getLocalPort server)

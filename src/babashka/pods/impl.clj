@@ -261,20 +261,21 @@
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec {:keys [:remove-ns :resolve :socket]}]
+  ([pod-spec {:keys [:remove-ns :resolve :transport]}]
    (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
-         _ (if socket
+         socket? (identical? :socket transport)
+         _ (if socket?
              (.inheritIO pb)
              (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
          _ (cond-> (doto (.environment pb)
                      (.put "BABASHKA_POD" "true"))
-             socket (.put "BABASHKA_POD_SOCKET" "true"))
+             socket? (.put "BABASHKA_POD_TRANSPORT" "socket"))
          p (.start pb)
-         port-file (when socket (port-file (.pid p)))
-         socket-port (when socket (read-port port-file))
+         port-file (when socket? (port-file (.pid p)))
+         socket-port (when socket? (read-port port-file))
          [socket stdin stdout]
-         (if socket
+         (if socket?
            (let [^Socket socket
                  (loop []
                    (if-let [sock (try (create-socket "localhost" socket-port)
