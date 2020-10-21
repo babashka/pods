@@ -244,9 +244,11 @@
   (Socket. hostname port))
 
 (defn close-socket
-  "Close the socket, and also closes its input and output streams."
+  "Close the socket, and also closes its input and output streams. Returns nil."
   [^Socket socket]
-  (.close socket))
+  (try (.close socket)
+       nil
+       (catch java.net.SocketException _ nil)))
 
 (defn port-file [pid]
   (io/file (str ".babashka-pod-" pid ".port")))
