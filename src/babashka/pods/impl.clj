@@ -244,7 +244,7 @@
   (Socket. hostname port))
 
 (defn close-socket
-  "Close the socket, and also closes its input and output streams. Returns nil."
+  "Close the socket, and also closes its input and output streams."
   [^Socket socket]
   (try (.close socket)
        nil
@@ -318,9 +318,11 @@
                       (get-string ns "name"))
                     (next-id))
          _ (add-shutdown-hook! #(do
+                                  (destroy pod-id)
                                   (when socket
-                                    (close-socket socket))
-                                  (destroy pod-id)))
+                                    ;; this probably isn't necessary because we
+                                    ;; killed the process, but anyway
+                                    (close-socket socket))))
          pod (assoc pod :pod-id pod-id)
          pod-namespaces (mapv #(bencode->namespace pod %)
                               pod-namespaces)
