@@ -19,56 +19,53 @@
               (string? var-value)
               (sci/eval-string* ctx var-value))))))
 
-(def load-pod
-  (with-meta
-    (fn
-      ([ctx pod-spec] (load-pod ctx pod-spec nil))
-      ([ctx pod-spec opts]
-       (let [env (:env ctx)
-             pod (binding [*out* @sci/out
-                           *err* @sci/err]
-                   (impl/load-pod
-                    pod-spec
-                    (merge
-                     {:remove-ns
-                      (fn [sym]
-                        (swap! env update :namespaces dissoc sym))
-                      :resolve
-                      (fn [sym]
-                        (let [sym-ns (or (some-> (namespace sym)
-                                                 symbol)
-                                         'clojure.core)
-                              sym-name (symbol (name sym))]
-                          (or (get-in @env [:namespaces sym-ns sym-name])
-                              (let [v (sci/new-var sym {:predefined true})]
-                                (swap! env assoc-in [:namespaces sym-ns sym-name]
-                                       v)
-                                v))))}
-                     opts)))
-             namespaces (:namespaces pod)
-             namespaces-to-load (set (keep (fn [[ns-name _ defer?]]
-                                             (when defer?
-                                               ns-name))
-                                           namespaces))]
-         (when (seq namespaces-to-load)
-           (let [load-fn (fn load-fn [{:keys [:namespace]}]
-                           (when (contains? namespaces-to-load namespace)
-                             (let [ns (impl/load-ns pod namespace)]
-                               (process-namespace ctx ns))
-                             {:file nil
-                              :source ""}))
-                 prev-load-fn (:load-fn @env)
-                 new-load-fn (fn [m]
-                               (or (load-fn m)
-                                   (when prev-load-fn
-                                     (prev-load-fn m))))]
-             (swap! env assoc :load-fn new-load-fn)))
-         (doseq [[ns-name vars lazy?] namespaces
-                 :when (not lazy?)]
-           (process-namespace ctx {:name ns-name :vars vars}))
-         (sci/future (impl/processor pod))
-         {:pod/id (:pod-id pod)})))
-    {:sci.impl/op :needs-ctx}))
+(defn load-pod
+  ([ctx pod-spec] (load-pod ctx pod-spec nil))
+  ([ctx pod-spec opts]
+   (let [env (:env ctx)
+         pod (binding [*out* @sci/out
+                       *err* @sci/err]
+               (impl/load-pod
+                pod-spec
+                (merge
+                 {:remove-ns
+                  (fn [sym]
+                    (swap! env update :namespaces dissoc sym))
+                  :resolve
+                  (fn [sym]
+                    (let [sym-ns (or (some-> (namespace sym)
+                                             symbol)
+                                     'clojure.core)
+                          sym-name (symbol (name sym))]
+                      (or (get-in @env [:namespaces sym-ns sym-name])
+                          (let [v (sci/new-var sym {:predefined true})]
+                            (swap! env assoc-in [:namespaces sym-ns sym-name]
+                                   v)
+                            v))))}
+                 opts)))
+         namespaces (:namespaces pod)
+         namespaces-to-load (set (keep (fn [[ns-name _ defer?]]
+                                         (when defer?
+                                           ns-name))
+                                       namespaces))]
+     (when (seq namespaces-to-load)
+       (let [load-fn (fn load-fn [{:keys [:namespace]}]
+                       (when (contains? namespaces-to-load namespace)
+                         (let [ns (impl/load-ns pod namespace)]
+                           (process-namespace ctx ns))
+                         {:file nil
+                          :source ""}))
+             prev-load-fn (:load-fn @env)
+             new-load-fn (fn [m]
+                           (or (load-fn m)
+                               (when prev-load-fn
+                                 (prev-load-fn m))))]
+         (swap! env assoc :load-fn new-load-fn)))
+     (doseq [[ns-name vars lazy?] namespaces
+             :when (not lazy?)]
+       (process-namespace ctx {:name ns-name :vars vars}))
+     (sci/future (impl/processor pod))
+     {:pod/id (:pod-id pod)})))
 
 (defn unload-pod
   ([pod-id] (unload-pod pod-id {}))
