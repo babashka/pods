@@ -267,6 +267,14 @@
   (binding [*out* *err*]
     (println (str/join " " (map pr-str strs)))))
 
+;; TODO: symbol -> look up pod in local cache, invoke if present, else
+;; download via package.
+;; What about versions?
+;; bb can package definitions of popular pods in its resources
+;; but what if the resources have an error - maybe best to fetch the definitions from github
+;; (load-pod 'org.babashka/postgresql)
+;; (load-pod 'org.babashka/postgresql_0.0.1)
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec {:keys [:remove-ns :resolve :transport]}]
