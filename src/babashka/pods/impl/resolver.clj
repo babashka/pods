@@ -103,7 +103,31 @@
      (if (.exists f) (edn/read-string (slurp f))
          ;; TODO: download from github?
          (case qsym
-           'org.babashka/pod-babashka-postgresql
+           org.babashka/pod-babashka-hsqldb
+           '{:pod/name org.babashka/pod-babashka-hsqldb
+             :pod/description ""
+             :pod/version "0.0.1"
+             :pod/license ""
+             :pod/artifacts
+             [{:os/name "Mac.*"
+               :os/arch "x86_64"
+               :artifact/url "https://github.com/babashka/babashka-sql-pods/releases/download/v0.0.1/pod-babashka-hsqldb-0.0.1-macos-amd64.zip"
+               #_#_:artifact/hash "sha256:sfEkDVDKf/owDyW+hCj22N5eNgFNYk62fxpvKexwva0="
+               ;; TODO: should this be a command vector rather?
+               :artifact/executable "pod-babashka-hsqldb"
+               ;; or rather, give optional args here.
+               }
+              {:os/name "Linux.*"
+               :os/arch "amd64"
+               :artifact/url "https://github.com/babashka/babashka-sql-pods/releases/download/v0.0.1/pod-babashka-hsqldb-0.0.1-linux-amd64.zip"
+               #_#_:artifact/hash "sha256:NlCox8UXMq/y0dBGTjYkDSJEcJ8UZrkBQsK/OyRIQ6c="
+               :artifact/executable "pod-babashka-hsqldb"}
+              #_{:os/name "Windows.*"
+                 :os/arch "amd64"
+                 :artifact/url "https://github.com/borkdude/babashka/releases/download/v0.2.2/babashka-0.2.2-windows-amd64.zip"
+                 :artifact/hash "sha256:AAMks+jCr5JbeU4jHwaGxPHG22jyfvB5lzVEaRTpcHE="
+                 :artifact/executable "bb.exe"}]}
+           org.babashka/pod-babashka-postgresql
            '{:pod/name org.babashka/pod-babashka-postgresql
              :pod/description ""
              :pod/version "0.0.1"
