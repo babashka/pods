@@ -1,7 +1,8 @@
 (ns babashka.pods.impl
   {:no-doc true}
   (:refer-clojure :exclude [read])
-  (:require [bencode.core :as bencode]
+  (:require [babashka.pods.impl.resolver :as resolver]
+            [bencode.core :as bencode]
             [cheshire.core :as cheshire]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
@@ -278,7 +279,9 @@
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec {:keys [:remove-ns :resolve :transport]}]
-   (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
+   (let [pod-spec (cond (string? pod-spec) [pod-spec]
+                        (qualified-symbol? pod-spec) (resolver/resolve qualified-symbol?)
+                        :else pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
          socket? (identical? :socket transport)
          _ (if socket?
