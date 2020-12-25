@@ -280,7 +280,7 @@
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec {:keys [:remove-ns :resolve :transport]}]
    (let [pod-spec (cond (string? pod-spec) [pod-spec]
-                        (qualified-symbol? pod-spec) (resolver/resolve qualified-symbol?)
+                        (qualified-symbol? pod-spec) (resolver/resolve pod-spec)
                         :else pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
          socket? (identical? :socket transport)
