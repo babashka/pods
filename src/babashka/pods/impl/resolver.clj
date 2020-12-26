@@ -87,70 +87,26 @@
     (.connect conn)
     (io/make-parents dest)
     (with-open [is (.getInputStream conn)]
-      (io/copy is dest))
-    (when verbose? (warn "Download complete."))))
+      (io/copy is dest))))
 
-(def pod-meta-dir
+(def pod-manifests-dir
   ;; wrapped in delay for GraalVM native-image
-  (delay (io/file (System/getProperty "user.home")
-                  ".babashka" "pods" "meta")))
+  (delay (io/file (or (System/getenv "XDG_DATA_HOME")
+                      (System/getProperty "user.home"))
+                  ".babashka" "pods" "repository")))
 
-(defn pod-meta
-  ([qsym] (pod-meta qsym nil))
-  ([qsym version]
-   (let [version (or version "latest")
-         f (io/file @pod-meta-dir (str qsym) (str version ".edn"))]
-     (if (.exists f) (edn/read-string (slurp f))
-         ;; TODO: download from github?
-         (case qsym
-           org.babashka/pod-babashka-hsqldb
-           '{:pod/name org.babashka/pod-babashka-hsqldb
-             :pod/description ""
-             :pod/version "0.0.1"
-             :pod/license ""
-             :pod/artifacts
-             [{:os/name "Mac.*"
-               :os/arch "x86_64"
-               :artifact/url "https://github.com/babashka/babashka-sql-pods/releases/download/v0.0.1/pod-babashka-hsqldb-0.0.1-macos-amd64.zip"
-               #_#_:artifact/hash "sha256:sfEkDVDKf/owDyW+hCj22N5eNgFNYk62fxpvKexwva0="
-               ;; TODO: should this be a command vector rather?
-               :artifact/executable "pod-babashka-hsqldb"
-               ;; or rather, give optional args here.
-               }
-              {:os/name "Linux.*"
-               :os/arch "amd64"
-               :artifact/url "https://github.com/babashka/babashka-sql-pods/releases/download/v0.0.1/pod-babashka-hsqldb-0.0.1-linux-amd64.zip"
-               #_#_:artifact/hash "sha256:NlCox8UXMq/y0dBGTjYkDSJEcJ8UZrkBQsK/OyRIQ6c="
-               :artifact/executable "pod-babashka-hsqldb"}
-              #_{:os/name "Windows.*"
-                 :os/arch "amd64"
-                 :artifact/url "https://github.com/borkdude/babashka/releases/download/v0.2.2/babashka-0.2.2-windows-amd64.zip"
-                 :artifact/hash "sha256:AAMks+jCr5JbeU4jHwaGxPHG22jyfvB5lzVEaRTpcHE="
-                 :artifact/executable "bb.exe"}]}
-           org.babashka/pod-babashka-postgresql
-           '{:pod/name org.babashka/pod-babashka-postgresql
-             :pod/description ""
-             :pod/version "0.0.1"
-             :pod/license ""
-             :pod/artifacts
-             [{:os/name "Mac.*"
-               :os/arch "x86_64"
-               :artifact/url "https://github.com/babashka/babashka-sql-pods/releases/download/v0.0.1/pod-babashka-postgresql-0.0.1-macos-amd64.zip"
-               #_#_:artifact/hash "sha256:sfEkDVDKf/owDyW+hCj22N5eNgFNYk62fxpvKexwva0="
-               ;; TODO: should this be a command vector rather?
-               :artifact/executable "pod-babashka-postgresql"
-               ;; or rather, give optional args here.
-               }
-              {:os/name "Linux.*"
-               :os/arch "amd64"
-               :artifact/url "https://github.com/babashka/babashka-sql-pods/releases/download/v0.0.1/pod-babashka-postgresql-0.0.1-linux-amd64.zip"
-               #_#_:artifact/hash "sha256:NlCox8UXMq/y0dBGTjYkDSJEcJ8UZrkBQsK/OyRIQ6c="
-               :artifact/executable "pod-babashka-postgresql"}
-              #_{:os/name "Windows.*"
-                 :os/arch "amd64"
-                 :artifact/url "https://github.com/borkdude/babashka/releases/download/v0.2.2/babashka-0.2.2-windows-amd64.zip"
-                 :artifact/hash "sha256:AAMks+jCr5JbeU4jHwaGxPHG22jyfvB5lzVEaRTpcHE="
-                 :artifact/executable "bb.exe"}]})))))
+(defn github-url [qsym version]
+  (format
+   "https://raw.githubusercontent.com/babashka/pod-manifests/master/%s/%s.edn"
+   qsym version))
+
+(defn pod-manifest
+  [qsym version]
+  (let [f (io/file @pod-manifests-dir (str qsym) (str version ".edn"))]
+    (if (.exists f)
+      (edn/read-string (slurp f))
+      (do (download (github-url qsym version) f false)
+          (edn/read-string (slurp f))))))
 
 (defn cache-dir
   ^java.io.File
@@ -191,37 +147,39 @@
                  (.digest digest))
         (String. "UTF-8"))))
 
-(defn resolve [qsym]
-  (when-let [package (pod-meta qsym)]
-    (let [artifacts (match-artifacts package)
-          cdir (cache-dir package)
-          ddir (data-dir package)
+(defn resolve [qsym version force?]
+  (assert (string? version) "Version must be provided!")
+  (when-let [manifest (pod-manifest qsym version)]
+    (let [artifacts (match-artifacts manifest)
+          cdir (cache-dir manifest)
+          ddir (data-dir manifest)
           execs (mapv (fn [artifact]
                         (let [url (:artifact/url artifact)
                               file-name (last (str/split url #"/"))
                               cache-file (io/file cdir file-name)
                               executable (io/file ddir (:artifact/executable artifact))]
-                          (if (.exists executable)
-                            nil #_(when verbose?
-                                    (warn "Package" (pkg-name package) "already installed"))
-                            (do (download url cache-file false)
-                                (when-let [expected-sha (:artifact/hash artifact)]
-                                  (let [sha (sha256 cache-file)]
-                                    (when-not (= (str/replace expected-sha #"^sha256:" "")
-                                                 sha)
-                                      (throw (ex-info (str "Wrong SHA-256 for file" (str cache-file))
-                                                      {:sha sha
-                                                       :expected-sha expected-sha})))))
-                                (let [filename (.getName cache-file)]
-                                  (cond (str/ends-with? filename ".zip")
-                                        (unzip {:zip-file cache-file
-                                                :destination-dir ddir
-                                                :verbose false})
-                                        (or (str/ends-with? filename ".tgz")
-                                            (str/ends-with? filename ".tar.gz"))
-                                        (un-tgz cache-file ddir
-                                                false)))
-                                (make-executable ddir [(:artifact/executable artifact)] false)
-                                (io/file ddir (:artifact/executable artifact))) )
+                          (when (or force? (not (.exists executable)))
+                            (warn (format "Downloading pod %s (%s)" qsym version))
+                            (download url cache-file false)
+                            (when-let [expected-sha (:artifact/hash artifact)]
+                              (let [sha (sha256 cache-file)]
+                                (when-not (= (str/replace expected-sha #"^sha256:" "")
+                                             sha)
+                                  (throw (ex-info (str "Wrong SHA-256 for file" (str cache-file))
+                                                  {:sha sha
+                                                   :expected-sha expected-sha})))))
+                            (let [filename (.getName cache-file)]
+                              (cond (str/ends-with? filename ".zip")
+                                    (unzip {:zip-file cache-file
+                                            :destination-dir ddir
+                                            :verbose false})
+                                    (or (str/ends-with? filename ".tgz")
+                                        (str/ends-with? filename ".tar.gz"))
+                                    (un-tgz cache-file ddir
+                                            false))
+                              (.delete cache-file))
+                            (make-executable ddir [(:artifact/executable artifact)] false)
+                            (warn (format "Successfully installed pod %s (%s)" qsym version))
+                            (io/file ddir (:artifact/executable artifact)))
                           (io/file ddir (:artifact/executable artifact)))) artifacts)]
       [(.getAbsolutePath ^java.io.File (first execs))])))

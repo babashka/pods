@@ -21,8 +21,12 @@
 
 (defn load-pod
   ([ctx pod-spec] (load-pod ctx pod-spec nil))
+  ([ctx pod-spec version opts] (load-pod ctx pod-spec (assoc opts :version version)))
   ([ctx pod-spec opts]
-   (let [env (:env ctx)
+   (let [opts (if (string? opts)
+                {:version opts}
+                opts)
+         env (:env ctx)
          pod (binding [*out* @sci/out
                        *err* @sci/err]
                (impl/load-pod

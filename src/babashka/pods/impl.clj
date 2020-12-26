@@ -278,9 +278,14 @@
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec {:keys [:remove-ns :resolve :transport]}]
-   (let [pod-spec (cond (string? pod-spec) [pod-spec]
-                        (qualified-symbol? pod-spec) (resolver/resolve pod-spec)
+  ([pod-spec opts]
+   (let [opts (if (string? opts)
+                {:version opts}
+                opts)
+         {:keys [:remove-ns :resolve :transport :version :force]} opts
+         version (if (string? opts) opts version)
+         pod-spec (cond (string? pod-spec) [pod-spec]
+                        (qualified-symbol? pod-spec) (resolver/resolve pod-spec version force)
                         :else pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
          socket? (identical? :socket transport)
