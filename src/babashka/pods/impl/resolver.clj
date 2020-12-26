@@ -182,4 +182,5 @@
                             (warn (format "Successfully installed pod %s (%s)" qsym version))
                             (io/file ddir (:artifact/executable artifact)))
                           (io/file ddir (:artifact/executable artifact)))) artifacts)]
-      [(.getAbsolutePath ^java.io.File (first execs))])))
+      {:executable (.getAbsolutePath ^java.io.File (first execs))
+       :options (:pod/options manifest)})))

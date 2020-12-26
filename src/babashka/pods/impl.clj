@@ -279,13 +279,19 @@
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec opts]
-   (let [opts (if (string? opts)
-                {:version opts}
+   (let [{:keys [:version :force]} opts
+         resolved (when (qualified-symbol? pod-spec)
+                    (resolver/resolve pod-spec version force))
+         _ (prn :resolved resolved)
+         opts (if resolved
+                (when-let [extra-opts (:options resolved)]
+                  (merge opts extra-opts)
+                  opts)
                 opts)
-         {:keys [:remove-ns :resolve :transport :version :force]} opts
-         version (if (string? opts) opts version)
-         pod-spec (cond (string? pod-spec) [pod-spec]
-                        (qualified-symbol? pod-spec) (resolver/resolve pod-spec version force)
+         {:keys [:remove-ns :resolve :transport]} opts
+         _ (prn :opts opts)
+         pod-spec (cond resolved [(:executable resolved)]
+                        (string? pod-spec) [pod-spec]
                         :else pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
          socket? (identical? :socket transport)
