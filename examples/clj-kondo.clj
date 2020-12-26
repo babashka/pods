@@ -8,4 +8,3 @@
 
 (-> (clj-kondo/run! {:lint ["src"]})
     :summary)
-

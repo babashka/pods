@@ -101,9 +101,10 @@
    qsym version))
 
 (defn pod-manifest
-  [qsym version]
+  [qsym version force?]
   (let [f (io/file @pod-manifests-dir (str qsym) (str version ".edn"))]
-    (if (.exists f)
+    (if (and (not force?)
+             (.exists f))
       (edn/read-string (slurp f))
       (do (download (github-url qsym version) f false)
           (edn/read-string (slurp f))))))
@@ -149,7 +150,7 @@
 
 (defn resolve [qsym version force?]
   (assert (string? version) "Version must be provided!")
-  (when-let [manifest (pod-manifest qsym version)]
+  (when-let [manifest (pod-manifest qsym version force?)]
     (let [artifacts (match-artifacts manifest)
           cdir (cache-dir manifest)
           ddir (data-dir manifest)
