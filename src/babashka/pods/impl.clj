@@ -282,7 +282,6 @@
    (let [{:keys [:version :force]} opts
          resolved (when (qualified-symbol? pod-spec)
                     (resolver/resolve pod-spec version force))
-         _ (prn :resolved resolved)
          opts (if resolved
                 (if-let [extra-opts (:options resolved)]
                   (merge opts extra-opts)
