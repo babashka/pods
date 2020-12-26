@@ -1,3 +1,5 @@
+#!/usr/bin/env bb
+
 (require '[babashka.pods :as pods])
 
 (pods/load-pod 'justone/brisk "0.2.0")
