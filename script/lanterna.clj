@@ -28,3 +28,7 @@
                      10 8)
 
 (Thread/sleep 1000)
+
+(terminal/stop terminal)
+
+(shutdown-agents)

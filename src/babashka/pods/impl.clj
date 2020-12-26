@@ -284,12 +284,11 @@
                     (resolver/resolve pod-spec version force))
          _ (prn :resolved resolved)
          opts (if resolved
-                (when-let [extra-opts (:options resolved)]
+                (if-let [extra-opts (:options resolved)]
                   (merge opts extra-opts)
                   opts)
                 opts)
          {:keys [:remove-ns :resolve :transport]} opts
-         _ (prn :opts opts)
          pod-spec (cond resolved [(:executable resolved)]
                         (string? pod-spec) [pod-spec]
                         :else pod-spec)
