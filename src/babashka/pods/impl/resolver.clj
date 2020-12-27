@@ -97,7 +97,7 @@
 
 (defn github-url [qsym version]
   (format
-   "https://raw.githubusercontent.com/babashka/pod-manifests/master/manifests/%s/%s/manifest.edn"
+   "https://raw.githubusercontent.com/babashka/pod-registry/master/manifests/%s/%s/manifest.edn"
    qsym version))
 
 (defn pod-manifest
