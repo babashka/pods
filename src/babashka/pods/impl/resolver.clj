@@ -97,12 +97,12 @@
 
 (defn github-url [qsym version]
   (format
-   "https://raw.githubusercontent.com/babashka/pod-manifests/master/%s/%s.edn"
+   "https://raw.githubusercontent.com/babashka/pod-manifests/master/manifests/%s/%s/manifest.edn"
    qsym version))
 
 (defn pod-manifest
   [qsym version force?]
-  (let [f (io/file @pod-manifests-dir (str qsym) (str version ".edn"))]
+  (let [f (io/file @pod-manifests-dir (str qsym) (str version) "manifest.edn")]
     (if (and (not force?)
              (.exists f))
       (edn/read-string (slurp f))
