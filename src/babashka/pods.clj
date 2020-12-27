@@ -3,6 +3,8 @@
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
+  ([pod-spec version opts]
+   (load-pod pod-spec (assoc opts :version version)))
   ([pod-spec opts] (jvm/load-pod pod-spec opts)))
 
 (defn unload-pod

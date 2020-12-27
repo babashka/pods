@@ -33,8 +33,12 @@
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
+  ([pod-spec version opts] (load-pod pod-spec (assoc opts :version version)))
   ([pod-spec opts]
-   (let [pod (impl/load-pod
+   (let [opts (if (string? opts)
+                {:version opts}
+                opts)
+         pod (impl/load-pod
               pod-spec
               (merge {:remove-ns remove-ns
                       :resolve (fn [sym]

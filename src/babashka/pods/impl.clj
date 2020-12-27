@@ -1,7 +1,8 @@
 (ns babashka.pods.impl
   {:no-doc true}
   (:refer-clojure :exclude [read])
-  (:require [bencode.core :as bencode]
+  (:require [babashka.pods.impl.resolver :as resolver]
+            [bencode.core :as bencode]
             [cheshire.core :as cheshire]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
@@ -267,10 +268,29 @@
   (binding [*out* *err*]
     (println (str/join " " (map pr-str strs)))))
 
+;; TODO: symbol -> look up pod in local cache, invoke if present, else
+;; download via package.
+;; What about versions?
+;; bb can package definitions of popular pods in its resources
+;; but what if the resources have an error - maybe best to fetch the definitions from github
+;; (load-pod 'org.babashka/postgresql)
+;; (load-pod 'org.babashka/postgresql_0.0.1)
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
-  ([pod-spec {:keys [:remove-ns :resolve :transport]}]
-   (let [pod-spec (if (string? pod-spec) [pod-spec] pod-spec)
+  ([pod-spec opts]
+   (let [{:keys [:version :force]} opts
+         resolved (when (qualified-symbol? pod-spec)
+                    (resolver/resolve pod-spec version force))
+         opts (if resolved
+                (if-let [extra-opts (:options resolved)]
+                  (merge opts extra-opts)
+                  opts)
+                opts)
+         {:keys [:remove-ns :resolve :transport]} opts
+         pod-spec (cond resolved [(:executable resolved)]
+                        (string? pod-spec) [pod-spec]
+                        :else pod-spec)
          pb (ProcessBuilder. ^java.util.List pod-spec)
          socket? (identical? :socket transport)
          _ (if socket?

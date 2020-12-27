@@ -5,7 +5,7 @@
  {:sci
   {:extra-deps
    {borkdude/sci {:git/url "https://github.com/borkdude/sci"
-                  :sha "a7f8d05f08ab150621c2403dacdd57c47ea09ff4"}}}
+                  :sha "5aa9031eb3692a2207106076088fcab7347c2299"}}}
   :test
   {:extra-deps
    {cognitect/test-runner
