@@ -30,3 +30,5 @@
       (is (= expected actual))))
   (is (= "(\"hello\" \"print\" \"this\" \"debugging\" \"message\")\n:foo\n:foo\n" (str out)))
   (is (= "(\"hello\" \"print\" \"this\" \"error\")\n" (str err))))
+
+(def pod-registry (slurp (io/file "test-resources" "pod_registry.clj")))
