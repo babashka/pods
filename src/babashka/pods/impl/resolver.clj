@@ -55,11 +55,13 @@
             (let [entry-name (.getName entry)
                   new-path (.resolve output-path entry-name)]
               (if (.isDirectory entry)
-                (Files/createDirectories new-path (into-array []))
+                (Files/createDirectories new-path ^"[Ljava.nio.file.attribute.FileAttribute;"
+                                         (into-array java.nio.file.attribute.FileAttribute []))
                 (Files/copy ^java.io.InputStream zis
                             new-path
                             ^"[Ljava.nio.file.CopyOption;"
                             (into-array
+                             java.nio.file.CopyOption
                              [java.nio.file.StandardCopyOption/REPLACE_EXISTING]))))
             (recur)))))))
 
