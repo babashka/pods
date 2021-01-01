@@ -3,7 +3,7 @@
 Babashka pods are programs that can be used as Clojure libraries by babashka.
 
 This is the library to load babashka pods. It is used by
-[babashka](https://github.com/borkdude/babashka/) but also usable from the JVM
+[babashka](https://github.com/babashka/babashka/) but also usable from the JVM
 and [sci](https://github.com/borkdude/sci)-based projects other than babashka.
 
 <a title="Wa17gs / CC BY-SA (https://creativecommons.org/licenses/by-sa/4.0)" href="https://commons.wikimedia.org/wiki/File:Below_Golden_Gate_Bridge.jpeg"><img width="512" alt="Below Golden Gate Bridge" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Below_Golden_Gate_Bridge.jpeg/512px-Below_Golden_Gate_Bridge.jpeg"></a>
@@ -46,7 +46,7 @@ _below_ in Polish and Russian. In Romanian it means _bridge_
 ## Available pods
 
 For a list of available pods, take a look
-[here](https://github.com/borkdude/babashka/blob/master/doc/projects.md#pods).
+[here](https://github.com/babashka/babashka/blob/master/doc/projects.md#pods).
 
 ## Status
 
