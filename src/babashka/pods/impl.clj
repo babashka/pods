@@ -164,6 +164,13 @@
                               bytes->string)
                   err (some-> (get reply "err")
                               bytes->string)]
+              ;; NOTE: write to out and err before delivering promise for making
+              ;; listening to output synchronous.
+              (when out
+                (binding [*out* out-stream]
+                  (println out)))
+              (when err (binding [*out* err-stream]
+                          (println err)))
               (when (or value* error? namespace)
                 (cond promise?
                       (deliver chan (cond error? exception
@@ -178,12 +185,7 @@
                 (when promise?
                   (deliver chan nil))
                 (when done-handler
-                  (done-handler)))
-              (when out
-                (binding [*out* out-stream]
-                  (println out)))
-              (when err (binding [*out* err-stream]
-                          (println err))))
+                  (done-handler))))
             (recur))))
       (catch Exception e
         (binding [*out* *err* #_err-stream]
