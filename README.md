@@ -70,6 +70,10 @@ On the JVM:
 ;;=> [#:next.jdbc{:update-count 0}]
 ```
 
+### Where does the pod come from?
+
+When calling `load-pod` with a string or vector of strings, the pod is looked up on the local file system (either using the PATH, or using an absolute path). When it is called with a qualified symbol and a version - like `(load-pod 'org.babashka/aws "0.0.5")` then it will be looked up in and downloaded from the [pod-registry](https://github.com/babashka/pod-registry).
+
 ## Sci
 
 To use pods in a [sci](https://github.com/borkdude/sci) based project, see
