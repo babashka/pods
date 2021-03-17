@@ -1,4 +1,4 @@
-(defproject babashka/babashka.pods "0.0.1-SNAPSHOT"
+(defproject babashka/babashka.pods "0.0.1"
   :description "babashka pods"
   :url "https://github.com/babashka/babashka.pods"
   :scm {:name "git"
