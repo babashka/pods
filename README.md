@@ -1,6 +1,6 @@
 # Babashka pods
 
-[![Clojars Project](https://img.shields.io/clojars/v/babashka/pods.svg)](https://clojars.org/babashka/pods)
+[![Clojars Project](https://img.shields.io/clojars/v/babashka/babashka.pods.svg)](https://clojars.org/babashka/babashka.pods)
 
 Babashka pods are programs that can be used as Clojure libraries by babashka.
 
