@@ -36,12 +36,21 @@
 
 (defn transit-json-read [^String s]
   (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
-    (let [r (transit/reader bais :json)]
+    (let [r (transit/reader bais :json {:handlers
+                                        {(str ::local-date-time)
+                                         (transit/read-handler
+                                          (fn [s]
+                                            (java.time.LocalDateTime/parse s)))}})]
       (transit/read r))))
 
 (defn transit-json-write [^String s]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json)]
+    (let [w (transit/writer baos :json {:handlers
+                                        {java.time.LocalDateTime
+                                         (transit/write-handler
+                                          (str ::local-date-time)
+                                          (fn [s]
+                                            (java.time.LocalDateTime/parse s)))}})]
       (transit/write w s)
       (str baos))))
 
@@ -193,7 +202,12 @@
                             (write out
                              {"status" ["done"]
                               "id" id
-                              "value" "#my/other-tag[1]"}))
+                              "value" "#my/other-tag[1]"})
+                            pod.test-pod/local-date-time
+                            (write out
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value" (write-fn (java.time.LocalDateTime/now))}))
                           (recur))
                 :shutdown (System/exit 0)
                 :load-ns (let [ns (-> (get message "ns")

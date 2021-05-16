@@ -39,14 +39,28 @@
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
 
+(defonce transit-read-handlers (atom {}))
+
 (defn transit-json-read [^String s]
   (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
-    (let [r (transit/reader bais :json)]
+    (let [r (transit/reader bais :json @transit-read-handlers)]
       (transit/read r))))
+
+;; https://www.cognitect.com/blog/2015/9/10/extending-transit
+(defn add-transit-read-handler [tag fn]
+  (let [rh (transit/read-handler fn)]
+    (swap! transit-read-handlers assoc tag rh)))
+
+(defonce transit-write-handlers (atom {}))
+
+;; https://www.cognitect.com/blog/2015/9/10/extending-transit
+(defn add-transit-write-handler [class tag fn]
+  (let [rh (transit/write-handler tag fn)]
+    (swap! transit-write-handlers assoc class rh)))
 
 (defn transit-json-write [^String s]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json)]
+    (let [w (transit/writer baos :json {:handlers @transit-write-handlers})]
       (transit/write w s)
       (str baos))))
 
