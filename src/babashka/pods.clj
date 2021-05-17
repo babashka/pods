@@ -14,3 +14,9 @@
 (defn invoke
   ([pod-id-or-pod sym args] (invoke pod-id-or-pod sym args {}))
   ([pod-id-or-pod sym args opts] (jvm/invoke pod-id-or-pod sym args opts)))
+
+(defn add-transit-read-handler [tag fn]
+  (jvm/add-transit-read-handler tag fn))
+
+(defn add-transit-write-handler [tag fn classes]
+  (jvm/add-transit-write-handler tag fn classes))

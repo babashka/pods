@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eou pipefail
+
 export BABASHKA_POD_TEST_FORMAT
 export BABASHKA_POD_TEST_SOCKET
 

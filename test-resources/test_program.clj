@@ -64,6 +64,12 @@
 
 (def fn-called (pod.test-pod/fn-call inc 2))
 
+;; (.println System/err (str :fmt " " fmt))
+(def local-date-time
+  (if (= "transit+json" fmt)
+    (instance? java.time.LocalDateTime (pod.test-pod/local-date-time (java.time.LocalDateTime/now)))
+    true))
+
 (require '[pod.test-pod.only-code :as only-code])
 (def should-be-1 (only-code/foo))
 
@@ -90,4 +96,5 @@
  other-tagged
  loaded
  fn-called
+ local-date-time
  should-be-1]
