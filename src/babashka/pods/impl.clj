@@ -43,7 +43,7 @@
 
 (defn transit-json-read [^String s]
   (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
-    (let [r (transit/reader bais :json @transit-read-handlers)]
+    (let [r (transit/reader bais :json {:handlers @transit-read-handlers})]
       (transit/read r))))
 
 ;; https://www.cognitect.com/blog/2015/9/10/extending-transit
@@ -54,9 +54,10 @@
 (defonce transit-write-handlers (atom {}))
 
 ;; https://www.cognitect.com/blog/2015/9/10/extending-transit
-(defn add-transit-write-handler [class tag fn]
+(defn add-transit-write-handler [tag fn classes]
   (let [rh (transit/write-handler tag fn)]
-    (swap! transit-write-handlers assoc class rh)))
+    (doseq [class classes]
+      (swap! transit-write-handlers assoc class rh))))
 
 (defn transit-json-write [^String s]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]

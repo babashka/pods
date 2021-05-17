@@ -37,20 +37,19 @@
 (defn transit-json-read [^String s]
   (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
     (let [r (transit/reader bais :json {:handlers
-                                        {(str ::local-date-time)
+                                        {"pod.test-pod/local-date-time"
                                          (transit/read-handler
                                           (fn [s]
                                             (java.time.LocalDateTime/parse s)))}})]
       (transit/read r))))
 
-(defn transit-json-write [^String s]
+(defn transit-json-write [s]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
     (let [w (transit/writer baos :json {:handlers
                                         {java.time.LocalDateTime
                                          (transit/write-handler
-                                          (str ::local-date-time)
-                                          (fn [s]
-                                            (java.time.LocalDateTime/parse s)))}})]
+                                          "pod.test-pod/local-date-time"
+                                          str)}})]
       (transit/write w s)
       (str baos))))
 
@@ -120,7 +119,16 @@
                                                 {"name" "other-tag"}
                                                 ;; reads thing with other tag
                                                 {"name" "read-other-tag"
-                                                 "code" "(defn read-other-tag [x] [x x])"}]
+                                                 "code" "(defn read-other-tag [x] [x x])"}
+                                                {"name" "-local-date-time"}
+                                                {"name" "local-date-time"
+                                                 "code" "
+(babashka.pods/add-transit-read-handler \"pod.test-pod/local-date-time\"
+  (fn [s] (java.time.LocalDateTime/parse s)))
+(babashka.pods/add-transit-write-handler \"pod.test-pod/local-date-time\"
+  str #{java.time.LocalDateTime})
+(defn local-date-time [x]
+  (-local-date-time x))"}]
                                                dependents)}
                                  {"name" "pod.test-pod.loaded"
                                   "defer" "true"}
@@ -203,11 +211,11 @@
                              {"status" ["done"]
                               "id" id
                               "value" "#my/other-tag[1]"})
-                            pod.test-pod/local-date-time
+                            pod.test-pod/-local-date-time
                             (write out
                                    {"status" ["done"]
                                     "id" id
-                                    "value" (write-fn (java.time.LocalDateTime/now))}))
+                                    "value" (write-fn (first args))}))
                           (recur))
                 :shutdown (System/exit 0)
                 :load-ns (let [ns (-> (get message "ns")

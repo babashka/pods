@@ -73,5 +73,5 @@
 (defn add-transit-read-handler [tag fn]
   (impl/add-transit-read-handler tag fn))
 
-(defn add-transit-write-handler [class tag fn]
-  (impl/add-transit-write-handler class tag fn))
+(defn add-transit-write-handler [tag fn classes]
+  (impl/add-transit-write-handler tag fn classes))
