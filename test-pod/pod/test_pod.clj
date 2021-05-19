@@ -141,7 +141,7 @@
   (-local-date-time x))
 
 ;; serialize Java arrays as vectors with tag java.array
-(babashka.pods/set-transit-default-write-handler!
+(babashka.pods/set-default-transit-write-handler!
   (fn [x] (when (.isArray (class x)) \"java.array\"))
   vec)
 

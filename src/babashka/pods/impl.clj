@@ -78,7 +78,7 @@
 
 (defonce transit-default-write-handlers (atom {}))
 
-(defn set-transit-default-write-handler! [tag-fn val-fn]
+(defn set-default-transit-write-handler! [tag-fn val-fn]
   (let [wh (transit/write-handler tag-fn val-fn)]
     (swap! transit-default-write-handlers assoc *pod-id* wh)))
 

@@ -87,5 +87,5 @@
 (defn add-transit-write-handler! [tag fn classes]
   (impl/add-transit-write-handler! tag fn classes))
 
-(defn set-transit-default-write-handler! [tag-fn val-fn]
-  (impl/set-transit-default-write-handler! tag-fn val-fn))
+(defn set-default-transit-write-handler! [tag-fn val-fn]
+  (impl/set-default-transit-write-handler! tag-fn val-fn))

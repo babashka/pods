@@ -21,5 +21,5 @@
 (defn add-transit-write-handler! [tag fn classes]
   (jvm/add-transit-write-handler! tag fn classes))
 
-(defn set-transit-default-write-handler! [tag-fn val-fn]
-  (jvm/set-transit-default-write-handler! tag-fn val-fn))
+(defn set-default-transit-write-handler! [tag-fn val-fn]
+  (jvm/set-default-transit-write-handler! tag-fn val-fn))
