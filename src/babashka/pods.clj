@@ -15,11 +15,17 @@
   ([pod-id-or-pod sym args] (invoke pod-id-or-pod sym args {}))
   ([pod-id-or-pod sym args opts] (jvm/invoke pod-id-or-pod sym args opts)))
 
-(defn add-transit-read-handler! [tag fn]
-  (jvm/add-transit-read-handler! tag fn))
+(defmacro copy-var [name var]
+  `(do (def ~name ~var)
+       (let [m# (meta (var ~var))
+             doc# (:doc m#)
+             arglists# (:arglists m#)]
+         (alter-meta! (var ~name) assoc
+                      :arglists arglists#
+                      :doc doc#))))
 
-(defn add-transit-write-handler! [tag fn classes]
-  (jvm/add-transit-write-handler! tag fn classes))
-
-(defn set-default-transit-write-handler! [tag-fn val-fn]
-  (jvm/set-default-transit-write-handler! tag-fn val-fn))
+#_:clj-kondo/ignore
+(do
+  (copy-var add-transit-read-handler! jvm/add-transit-read-handler!)
+  (copy-var add-transit-write-handler! jvm/add-transit-write-handler!)
+  (copy-var set-default-transit-write-handler! jvm/set-default-transit-write-handler!))

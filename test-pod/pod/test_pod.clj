@@ -134,8 +134,9 @@
 (babashka.pods/add-transit-read-handler! \"local-date-time\"
   (fn [s] (java.time.LocalDateTime/parse s)))
 
-(babashka.pods/add-transit-write-handler! \"local-date-time\"
-  str #{java.time.LocalDateTime})
+(babashka.pods/add-transit-write-handler! #{java.time.LocalDateTime}
+  \"local-date-time\"
+  str )
 
 (defn local-date-time [x]
   (-local-date-time x))

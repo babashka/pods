@@ -81,11 +81,17 @@
   ([pod-id sym args] (invoke pod-id sym args {}))
   ([pod-id sym args opts] (impl/invoke-public pod-id sym args opts)))
 
-(defn add-transit-read-handler! [tag fn]
-  (impl/add-transit-read-handler! tag fn))
+(defmacro copy-var [name var]
+  `(do (def ~name ~var)
+       (let [m# (meta (var ~var))
+             doc# (:doc m#)
+             arglists# (:arglists m#)]
+         (alter-meta! (var ~name) assoc
+                      :arglists arglists#
+                      :doc doc#))))
 
-(defn add-transit-write-handler! [tag fn classes]
-  (impl/add-transit-write-handler! tag fn classes))
-
-(defn set-default-transit-write-handler! [tag-fn val-fn]
-  (impl/set-default-transit-write-handler! tag-fn val-fn))
+#_:clj-kondo/ignore
+(do
+  (copy-var add-transit-read-handler! impl/add-transit-read-handler!)
+  (copy-var add-transit-write-handler! impl/add-transit-write-handler!)
+  (copy-var set-default-transit-write-handler! impl/set-default-transit-write-handler!))

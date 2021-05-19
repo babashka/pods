@@ -69,7 +69,8 @@
          (transit/write-handler-map (get @transit-write-handlers *pod-id*))))
 
 ;; https://www.cognitect.com/blog/2015/9/10/extending-transit
-(defn add-transit-write-handler! [tag fn classes]
+(defn add-transit-write-handler!
+  [classes tag fn]
   (let [rh (transit/write-handler tag fn)]
     (doseq [class classes]
       (swap! transit-write-handlers assoc-in [*pod-id* class] rh)))
