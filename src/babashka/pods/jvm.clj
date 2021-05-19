@@ -55,9 +55,10 @@
                           (when defer?
                             [ns-name pod]))
                         namespaces)))
-     (doseq [[ns-sym vars lazy?] namespaces
-             :when (not lazy?)]
-       (process-namespace {:name ns-sym :vars vars}))
+     (binding [impl/*pod-id* (:pod-id pod)]
+       (doseq [[ns-sym vars lazy?] namespaces
+               :when (not lazy?)]
+         (process-namespace {:name ns-sym :vars vars})))
      (future (impl/processor pod))
      {:pod/id (:pod-id pod)})))
 
@@ -70,8 +71,8 @@
   ([pod-id sym args] (invoke pod-id sym args {}))
   ([pod-id sym args opts] (impl/invoke-public pod-id sym args opts)))
 
-(defn add-transit-read-handler [pod-id tag fn]
-  (impl/add-transit-read-handler pod-id tag fn))
+(defn add-transit-read-handler [tag fn]
+  (impl/add-transit-read-handler tag fn))
 
-(defn add-transit-write-handler [pod-id tag fn classes]
-  (impl/add-transit-write-handler pod-id tag fn classes))
+(defn add-transit-write-handler [tag fn classes]
+  (impl/add-transit-write-handler tag fn classes))

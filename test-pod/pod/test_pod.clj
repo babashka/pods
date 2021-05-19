@@ -123,9 +123,9 @@
                                                 {"name" "-local-date-time"}
                                                 {"name" "local-date-time"
                                                  "code" "
-(babashka.pods/add-transit-read-handler \"pod.test-pod\" \"local-date-time\"
+(babashka.pods/add-transit-read-handler \"local-date-time\"
   (fn [s] (java.time.LocalDateTime/parse s)))
-(babashka.pods/add-transit-write-handler \"pod.test-pod\" \"local-date-time\"
+(babashka.pods/add-transit-write-handler \"local-date-time\"
   str #{java.time.LocalDateTime})
 (defn local-date-time [x]
   (-local-date-time x))"}]

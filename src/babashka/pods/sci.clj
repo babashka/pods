@@ -65,9 +65,10 @@
                                (when prev-load-fn
                                  (prev-load-fn m))))]
          (swap! env assoc :load-fn new-load-fn)))
-     (doseq [[ns-name vars lazy?] namespaces
-             :when (not lazy?)]
-       (process-namespace ctx {:name ns-name :vars vars}))
+     (binding [impl/*pod-id* (:pod-id pod)]
+       (doseq [[ns-name vars lazy?] namespaces
+               :when (not lazy?)]
+         (process-namespace ctx {:name ns-name :vars vars})))
      (sci/future (impl/processor pod))
      {:pod/id (:pod-id pod)})))
 
@@ -80,8 +81,8 @@
   ([pod-id sym args] (invoke pod-id sym args {}))
   ([pod-id sym args opts] (impl/invoke-public pod-id sym args opts)))
 
-(defn add-transit-read-handler [pod-id tag fn]
-  (impl/add-transit-read-handler pod-id tag fn))
+(defn add-transit-read-handler [tag fn]
+  (impl/add-transit-read-handler tag fn))
 
-(defn add-transit-write-handler [pod-id tag fn classes]
-  (impl/add-transit-write-handler pod-id tag fn classes))
+(defn add-transit-write-handler [tag fn classes]
+  (impl/add-transit-write-handler tag fn classes))
