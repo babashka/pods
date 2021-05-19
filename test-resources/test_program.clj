@@ -74,6 +74,12 @@
     (instance? java.time.LocalDateTime (pod.test-pod/local-date-time (java.time.LocalDateTime/now)))
     true))
 
+(def assoc-string-array
+  (if (= "transit+json" fmt)
+    (let [v (:a (pod.test-pod/assoc {} :a (into-array String ["foo"])))]
+      (.isArray (class v)))
+    true))
+
 (require '[pod.test-pod.only-code :as only-code])
 (def should-be-1 (only-code/foo))
 
@@ -101,4 +107,5 @@
  loaded
  fn-called
  local-date-time
+ assoc-string-array
  should-be-1]

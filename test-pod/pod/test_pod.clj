@@ -40,7 +40,11 @@
                                         {"local-date-time"
                                          (transit/read-handler
                                           (fn [s]
-                                            (java.time.LocalDateTime/parse s)))}})]
+                                            (java.time.LocalDateTime/parse s)))
+                                         "java.array"
+                                         (transit/read-handler
+                                          (fn [v]
+                                            (into-array v)))}})]
       (transit/read r))))
 
 (defn transit-json-write [s]
@@ -49,7 +53,11 @@
                                         {java.time.LocalDateTime
                                          (transit/write-handler
                                           "local-date-time"
-                                          str)}})]
+                                          str)}
+                                        :default-handler
+                                        (transit/write-handler
+                                         (fn [x] (when (.isArray (class x)) "java.array"))
+                                         vec)})]
       (transit/write w s)
       (str baos))))
 
@@ -121,14 +129,26 @@
                                                 {"name" "read-other-tag"
                                                  "code" "(defn read-other-tag [x] [x x])"}
                                                 {"name" "-local-date-time"}
-                                                {"name" "local-date-time"
+                                                {"name" "transit-stuff"
                                                  "code" "
-(babashka.pods/add-transit-read-handler \"local-date-time\"
+(babashka.pods/add-transit-read-handler! \"local-date-time\"
   (fn [s] (java.time.LocalDateTime/parse s)))
-(babashka.pods/add-transit-write-handler \"local-date-time\"
+
+(babashka.pods/add-transit-write-handler! \"local-date-time\"
   str #{java.time.LocalDateTime})
+
 (defn local-date-time [x]
-  (-local-date-time x))"}]
+  (-local-date-time x))
+
+;; serialize Java arrays as vectors with tag java.array
+(babashka.pods/set-transit-default-write-handler!
+  (fn [x] (when (.isArray (class x)) \"java.array\"))
+  vec)
+
+(babashka.pods/add-transit-read-handler! \"java.array\"
+  into-array)
+
+"}]
                                                dependents)}
                                  {"name" "pod.test-pod.loaded"
                                   "defer" "true"}

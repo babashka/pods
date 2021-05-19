@@ -14,10 +14,12 @@
                                                  (apply pods/load-pod @ctx-ref args))
                                      'invoke pods/invoke
                                      'unload-pod pods/unload-pod
-                                     'add-transit-read-handler  pods/add-transit-read-handler
-                                     'add-transit-write-handler pods/add-transit-write-handler}}
+                                     'add-transit-read-handler!  pods/add-transit-read-handler!
+                                     'add-transit-write-handler! pods/add-transit-write-handler!
+                                     'set-transit-default-write-handler! pods/set-transit-default-write-handler!}}
                        :classes {'System System
-                                 'java.time.LocalDateTime java.time.LocalDateTime}})
+                                 'java.time.LocalDateTime java.time.LocalDateTime
+                                 'java.lang.Class Class}})
         _ (vreset! ctx-ref ctx)
         ret (sci/binding [sci/out out
                           sci/err err]

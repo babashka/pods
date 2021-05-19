@@ -54,11 +54,12 @@
       (transit/read r))))
 
 ;; https://www.cognitect.com/blog/2015/9/10/extending-transit
-(defn add-transit-read-handler [tag fn]
-  (let [rh (transit/read-handler fn)]
-    (swap! transit-read-handlers assoc-in [*pod-id* tag] rh)
-    (update-transit-read-handler-map)
-    nil))
+(defn add-transit-read-handler!
+  ([tag fn]
+   (let [rh (transit/read-handler fn)]
+     (swap! transit-read-handlers assoc-in [*pod-id* tag] rh)
+     (update-transit-read-handler-map)
+     nil)))
 
 (defonce transit-write-handlers (atom {}))
 (defonce transit-write-handler-maps (atom {}))
@@ -68,16 +69,23 @@
          (transit/write-handler-map (get @transit-write-handlers *pod-id*))))
 
 ;; https://www.cognitect.com/blog/2015/9/10/extending-transit
-(defn add-transit-write-handler [tag fn classes]
+(defn add-transit-write-handler! [tag fn classes]
   (let [rh (transit/write-handler tag fn)]
     (doseq [class classes]
       (swap! transit-write-handlers assoc-in [*pod-id* class] rh)))
   (update-transit-write-handler-map)
   nil)
 
+(defonce transit-default-write-handlers (atom {}))
+
+(defn set-transit-default-write-handler! [tag-fn val-fn]
+  (let [wh (transit/write-handler tag-fn val-fn)]
+    (swap! transit-default-write-handlers assoc *pod-id* wh)))
+
 (defn transit-json-write [pod-id ^String s]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json {:handlers (get @transit-write-handler-maps pod-id)})]
+    (let [w (transit/writer baos :json {:handlers (get @transit-write-handler-maps pod-id)
+                                        :default-handler (get @transit-default-write-handlers pod-id)})]
       (transit/write w s)
       (str baos))))
 

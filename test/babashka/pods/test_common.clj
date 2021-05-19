@@ -26,7 +26,8 @@
                         [[1] [1]]
                         2
                         3
-                        true
+                        true ;; local-date
+                        true ;; roundtrip string array
                         1]
                (concat ret (repeat ::nil)))]
     (if (instance? java.util.regex.Pattern expected)

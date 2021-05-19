@@ -81,8 +81,11 @@
   ([pod-id sym args] (invoke pod-id sym args {}))
   ([pod-id sym args opts] (impl/invoke-public pod-id sym args opts)))
 
-(defn add-transit-read-handler [tag fn]
-  (impl/add-transit-read-handler tag fn))
+(defn add-transit-read-handler! [tag fn]
+  (impl/add-transit-read-handler! tag fn))
 
-(defn add-transit-write-handler [tag fn classes]
-  (impl/add-transit-write-handler tag fn classes))
+(defn add-transit-write-handler! [tag fn classes]
+  (impl/add-transit-write-handler! tag fn classes))
+
+(defn set-transit-default-write-handler! [tag-fn val-fn]
+  (impl/set-transit-default-write-handler! tag-fn val-fn))
