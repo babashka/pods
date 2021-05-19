@@ -40,28 +40,43 @@
   (str (java.util.UUID/randomUUID)))
 
 (defonce transit-read-handlers (atom {}))
+(defonce transit-read-handler-maps (atom {}))
 
-(defn transit-json-read [^String s]
+(defn update-transit-read-handler-map [pod-id]
+  (swap! transit-read-handler-maps assoc pod-id
+         (transit/read-handler-map (get @transit-read-handlers pod-id))))
+
+(defn transit-json-read [pod-id ^String s]
   (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
-    (let [r (transit/reader bais :json {:handlers @transit-read-handlers})]
+    (let [r (transit/reader bais :json {:handlers (get @transit-read-handler-maps pod-id)})]
       (transit/read r))))
 
 ;; https://www.cognitect.com/blog/2015/9/10/extending-transit
-(defn add-transit-read-handler [tag fn]
+(defn add-transit-read-handler [pod-id tag fn]
   (let [rh (transit/read-handler fn)]
-    (swap! transit-read-handlers assoc tag rh)))
+    (swap! transit-read-handlers assoc-in [pod-id tag] rh)
+    (update-transit-read-handler-map pod-id)
+    nil))
 
 (defonce transit-write-handlers (atom {}))
+(defonce transit-write-handler-maps (atom {}))
+
+(defn update-transit-write-handler-map [pod-id]
+  (swap! transit-write-handler-maps assoc pod-id
+         (transit/write-handler-map (get @transit-write-handlers pod-id))))
 
 ;; https://www.cognitect.com/blog/2015/9/10/extending-transit
-(defn add-transit-write-handler [tag fn classes]
+(defn add-transit-write-handler [pod-id tag fn classes]
   (let [rh (transit/write-handler tag fn)]
     (doseq [class classes]
-      (swap! transit-write-handlers assoc class rh))))
+      (swap! transit-write-handlers assoc-in [pod-id class] rh)))
+  (update-transit-write-handler-map pod-id)
+  nil)
 
-(defn transit-json-write [^String s]
+(defn transit-json-write [pod-id ^String s]
+  ;; (.println System/err (:pod-id pod))
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json {:handlers @transit-write-handlers})]
+    (let [w (transit/writer baos :json {:handlers (get @transit-write-handler-maps pod-id)})]
       (transit/write w s)
       (str baos))))
 
@@ -73,7 +88,7 @@
         write-fn (case format
                    :edn pr-str
                    :json cheshire/generate-string
-                   :transit+json transit-json-write)
+                   :transit+json #(transit-json-write (:pod-id pod) %))
         id (next-id)
         chan (if handlers handlers
                  (promise))
@@ -127,7 +142,7 @@
                                    (throw e)))))
                   :transit+json
                   (fn [s]
-                    (try (transit-json-read s)
+                    (try (transit-json-read (:pod-id pod) s)
                          (catch Exception e
                            (binding [*out* *err*]
                              (println "Cannot read Transit JSON: " (pr-str s))
@@ -284,14 +299,6 @@
 (defn debug [& strs]
   (binding [*out* *err*]
     (println (str/join " " (map pr-str strs)))))
-
-;; TODO: symbol -> look up pod in local cache, invoke if present, else
-;; download via package.
-;; What about versions?
-;; bb can package definitions of popular pods in its resources
-;; but what if the resources have an error - maybe best to fetch the definitions from github
-;; (load-pod 'org.babashka/postgresql)
-;; (load-pod 'org.babashka/postgresql_0.0.1)
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))

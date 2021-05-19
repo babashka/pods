@@ -5,6 +5,9 @@
 (def test-program (slurp (io/file "test-resources" "test_program.clj")))
 
 (defn assertions [out err ret]
+  ;; (.println System/err ret)
+  ;; (.println System/err out)
+  ;; (.println System/err err)
   (doseq [[expected actual]
           (map vector '["pod.test-pod"
                         pod.test-pod

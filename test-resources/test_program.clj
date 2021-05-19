@@ -5,9 +5,13 @@
 
 (def socket (System/getenv "BABASHKA_POD_TEST_SOCKET"))
 
-(def pod-id (:pod/id (pods/load-pod (cond-> ["clojure" "-A:test-pod"]
-                                      (= "json" fmt) (conj "--json")
-                                      (= "transit+json" fmt) (conj "--transit+json"))
+(def cmd (cond-> ["clojure" "-M:test-pod"]
+           (= "json" fmt) (conj "--json")
+           (= "transit+json" fmt) (conj "--transit+json")))
+
+;; (.println System/err cmd)
+
+(def pod-id (:pod/id (pods/load-pod cmd
                                     {:socket (boolean socket)})))
 
 (require '[pod.test-pod :as pod])

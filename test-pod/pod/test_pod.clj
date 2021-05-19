@@ -37,7 +37,7 @@
 (defn transit-json-read [^String s]
   (with-open [bais (java.io.ByteArrayInputStream. (.getBytes s "UTF-8"))]
     (let [r (transit/reader bais :json {:handlers
-                                        {"pod.test-pod/local-date-time"
+                                        {"local-date-time"
                                          (transit/read-handler
                                           (fn [s]
                                             (java.time.LocalDateTime/parse s)))}})]
@@ -48,7 +48,7 @@
     (let [w (transit/writer baos :json {:handlers
                                         {java.time.LocalDateTime
                                          (transit/write-handler
-                                          "pod.test-pod/local-date-time"
+                                          "local-date-time"
                                           str)}})]
       (transit/write w s)
       (str baos))))
@@ -123,9 +123,9 @@
                                                 {"name" "-local-date-time"}
                                                 {"name" "local-date-time"
                                                  "code" "
-(babashka.pods/add-transit-read-handler \"pod.test-pod/local-date-time\"
+(babashka.pods/add-transit-read-handler \"pod.test-pod\" \"local-date-time\"
   (fn [s] (java.time.LocalDateTime/parse s)))
-(babashka.pods/add-transit-write-handler \"pod.test-pod/local-date-time\"
+(babashka.pods/add-transit-write-handler \"pod.test-pod\" \"local-date-time\"
   str #{java.time.LocalDateTime})
 (defn local-date-time [x]
   (-local-date-time x))"}]

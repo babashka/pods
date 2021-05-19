@@ -18,5 +18,5 @@
    {lambdaisland/kaocha {:mvn/version "1.0.632"}}
    :main-opts ["-m" "kaocha.runner"]}
   :test-pod
-  {:paths ["src" "test-pod"]
+  {:extra-paths ["src" "test-pod"]
    :main-opts ["-m" "pod.test-pod"]}}}
