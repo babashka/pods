@@ -456,7 +456,7 @@ user=> (fw/watch "/tmp" (fn [result] (prn "result" result)))
 nil
 user=> (spit "/tmp/foobar123.txt" "foo")
 nil
-user=> "result" {:path "/private/tmp/foobar123.txt", :type "create"}
+user=> "result" {:path "/private/tmp/foobar123.txt", :type :create}
 ```
 
 ## Run tests
