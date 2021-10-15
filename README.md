@@ -337,6 +337,24 @@ In the pod client:
 nil
 ```
 
+#### Metadata
+
+Pods may attach metadata to functions and macros by sending data to the pod client
+in a `"meta"` field as part of a `"var"` section. The metadata must be an appropriate
+map, encoded as an EDN string. This is only applicable to vars in the pod and will be
+ignored if the var refers to Client-side code, since metadata can already be defined
+in those code blocks.
+
+For example, a pod can define a function called `add`:
+
+``` clojure
+{"format" "json"
+ "namespaces"
+ [{"name" "pod.babashka.demo"
+   "vars" [{"name" "add"
+            "meta" "{:doc \"arithmetic addition of 2 arguments\" :arglists ([a b])}"}]}]}
+```
+
 #### Deferred namespace loading
 
 When your pod exposes multiple namespaces that can be used independently from
