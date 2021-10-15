@@ -110,7 +110,8 @@
                                            "my/other-tag" "pod.test-pod/read-other-tag"}
                                 "namespaces"
                                 [{"name" "pod.test-pod"
-                                  "vars" (into [{"name" "add-sync"}
+                                  "vars" (into [{"name" "add-sync"
+                                                 "meta" "{:doc \"add the arguments\"}"}
                                                 {"name" "range-stream"
                                                  "async" "true"}
                                                 {"name" "assoc"}
@@ -127,7 +128,8 @@
                                                 {"name" "other-tag"}
                                                 ;; reads thing with other tag
                                                 {"name" "read-other-tag"
-                                                 "code" "(defn read-other-tag [x] [x x])"}
+                                                 "code" "(defn read-other-tag [x] [x x])"
+                                                 "meta" "{:doc \"unread\"}"}
                                                 {"name" "-local-date-time"}
                                                 {"name" "transit-stuff"
                                                  "code" "

@@ -11,11 +11,11 @@
       (swap! env update-in [:namespaces ns-name]
              (fn [ns-map]
                (if ns-map ns-map {:obj sci-ns})))
-      (doseq [[var-name var-value] vars]
+      (doseq [[var-name var-value :as var] vars]
         (cond (ifn? var-value)
               (swap! env assoc-in [:namespaces ns-name var-name]
                      (sci/new-var
-                      (symbol (str ns-name) (str var-name)) var-value))
+                      (symbol (str ns-name) (str var-name)) var-value (meta var-name)))
               (string? var-value)
               (sci/eval-string* ctx var-value))))))
 

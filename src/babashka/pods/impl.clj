@@ -122,7 +122,13 @@
                           #(Boolean/parseBoolean %))
            name-sym (symbol name)
            sym (symbol ns-name-str name)
-           code (get-maybe-string var "code")]
+           code (get-maybe-string var "code")
+           vmeta (some-> (get var "meta")
+                         bytes->string
+                         edn/read-string)
+           name-sym (if vmeta
+                      (with-meta name-sym vmeta)
+                      name-sym)]
        [name-sym
         (or code
             (fn [& args]

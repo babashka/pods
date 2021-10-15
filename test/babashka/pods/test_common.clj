@@ -28,7 +28,10 @@
                         3
                         true ;; local-date
                         true ;; roundtrip string array
-                        1]
+                        1
+                        "add the arguments"
+                        nil
+                        nil]
                (concat ret (repeat ::nil)))]
     (if (instance? java.util.regex.Pattern expected)
       (is (re-find expected actual))

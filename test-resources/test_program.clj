@@ -55,6 +55,10 @@
 (def add-result (pod.test-pod/add-sync 1 2 3))
 (def nil-result (pod.test-pod/return-nil))
 
+(def add-sync-meta (:doc (meta #'pod.test-pod/add-sync)))
+(def error-meta (:doc (meta #'pod.test-pod/error)))
+(def read-other-tag-meta (:doc (meta #'pod.test-pod/read-other-tag)))
+
 (def x9 pod.test-pod/x9)
 
 (def tagged (if (= "edn" fmt)
@@ -108,4 +112,7 @@
  fn-called
  local-date-time
  assoc-string-array
- should-be-1]
+ should-be-1
+ add-sync-meta
+ error-meta
+ read-other-tag-meta]
