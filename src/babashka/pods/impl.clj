@@ -310,7 +310,7 @@
                    (let [s (slurp f)]
                      (when (str/ends-with? s "\n")
                        (str/trim s))))]
-        (Integer. s)
+        (Integer/parseInt s)
         (recur)))))
 
 (defn debug [& strs]
