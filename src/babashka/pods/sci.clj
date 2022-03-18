@@ -1,6 +1,11 @@
 (ns babashka.pods.sci
   (:require [babashka.pods.impl :as impl]
-            [sci.core :as sci]))
+            [sci.core :as sci]
+            [clojure.java.io :as io]
+            [babashka.pods.impl.resolver :as resolver]
+            [clojure.edn :as edn]
+            [clojure.walk :as walk])
+  (:import (java.io DataInputStream PushbackInputStream)))
 
 (defn- process-namespace [ctx {:keys [:name :vars]}]
   (let [env (:env ctx)
@@ -18,6 +23,40 @@
                       (symbol (str ns-name) (str var-name)) var-value (meta var-name)))
               (string? var-value)
               (sci/eval-string* ctx var-value))))))
+
+(defn metadata-cache-file [pod-spec {:keys [:version]}]
+  (io/file (resolver/cache-dir {:pod/name pod-spec :pod/version version})
+           "metadata.cache"))
+
+(defn load-metadata-from-cache [pod-spec opts]
+  (let [cache-file (metadata-cache-file pod-spec opts)]
+    (when (.exists cache-file)
+      (with-open [r (PushbackInputStream. (io/input-stream cache-file))]
+        (impl/read r)))))
+
+(defn load-pod-metadata* [pod-spec {:keys [:version] :as opts}]
+  (let [metadata (impl/load-pod-metadata pod-spec opts)
+        cache-file (when (qualified-symbol? pod-spec) ; don't cache local pods b/c their namespaces can change
+                     (metadata-cache-file pod-spec opts))]
+    (when cache-file
+      (with-open [w (io/output-stream cache-file)]
+        (impl/write w metadata)))
+    metadata))
+
+(defn load-pod-metadata [ctx pod-spec {:keys [:version] :as opts}]
+  (let [metadata
+        (if-let [cached-metadata (when (qualified-symbol? pod-spec) ; don't cache local pods b/c their namespaces can change
+                                   (load-metadata-from-cache pod-spec opts))]
+          cached-metadata
+          (load-pod-metadata* pod-spec opts))]
+    (dorun
+      (for [ns (get metadata "namespaces")]
+        (let [ns-sym (-> ns (get "name") impl/bytes->string symbol)
+              key-path [:pod-namespaces ns-sym]
+              env (:env ctx)]
+          (swap! env assoc-in key-path
+                 {:pod-spec pod-spec
+                  :opts     (assoc opts :metadata metadata)}))))))
 
 (defn load-pod
   ([ctx pod-spec] (load-pod ctx pod-spec nil))
