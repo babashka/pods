@@ -263,12 +263,6 @@
     (swap! pods dissoc pod-id)
     nil))
 
-(def next-pod-id
-  (let [counter (atom 0)]
-    (fn []
-      (let [[o _] (swap-vals! counter inc)]
-        o))))
-
 (def bytes->symbol
   (comp symbol bytes->string))
 
