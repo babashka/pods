@@ -43,20 +43,19 @@
         (impl/write w metadata)))
     metadata))
 
-(defn load-pod-metadata [ctx pod-spec {:keys [:version] :as opts}]
+(defn load-pod-metadata [pod-spec {:keys [:version] :as opts}]
   (let [metadata
         (if-let [cached-metadata (when (qualified-symbol? pod-spec) ; don't cache local pods b/c their namespaces can change
                                    (load-metadata-from-cache pod-spec opts))]
           cached-metadata
           (load-pod-metadata* pod-spec opts))]
-    (dorun
-      (for [ns (get metadata "namespaces")]
-        (let [ns-sym (-> ns (get "name") impl/bytes->string symbol)
-              key-path [:pod-namespaces ns-sym]
-              env (:env ctx)]
-          (swap! env assoc-in key-path
-                 {:pod-spec pod-spec
-                  :opts     (assoc opts :metadata metadata)}))))))
+    (reduce
+      (fn [pod-namespaces ns]
+        (let [ns-sym (-> ns (get "name") impl/bytes->string symbol)]
+          (assoc pod-namespaces ns-sym {:pod-spec pod-spec
+                                        :opts (assoc opts :metadata metadata)})))
+      {} (get metadata "namespaces"))))
+
 
 (defn load-pod
   ([ctx pod-spec] (load-pod ctx pod-spec nil))
