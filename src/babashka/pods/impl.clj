@@ -314,8 +314,8 @@
   (binding [*out* *err*]
     (println (str/join " " (map pr-str strs)))))
 
-(defn resolve-pod [pod-spec {:keys [:version :force] :as opts}]
-  (let [resolved (when (qualified-symbol? pod-spec)
+(defn resolve-pod [pod-spec {:keys [:version :path :force] :as opts}]
+  (let [resolved (when (and (qualified-symbol? pod-spec) version)
                    (resolver/resolve pod-spec version force))
         opts (if resolved
                (if-let [extra-opts (:options resolved)]
@@ -324,6 +324,7 @@
                opts)
         pod-spec (cond
                    resolved [(:executable resolved)]
+                   path [path]
                    (string? pod-spec) [pod-spec]
                    :else pod-spec)]
     {:pod-spec pod-spec, :opts opts}))

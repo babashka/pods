@@ -34,18 +34,18 @@
       (with-open [r (PushbackInputStream. (io/input-stream cache-file))]
         (impl/read r)))))
 
-(defn load-pod-metadata* [pod-spec {:keys [:version] :as opts}]
+(defn load-pod-metadata* [pod-spec {:keys [:version :cache] :as opts}]
   (let [metadata (impl/load-pod-metadata pod-spec opts)
-        cache-file (when (qualified-symbol? pod-spec) ; don't cache local pods b/c their namespaces can change
+        cache-file (when (and version cache)
                      (metadata-cache-file pod-spec opts))]
     (when cache-file
       (with-open [w (io/output-stream cache-file)]
         (impl/write w metadata)))
     metadata))
 
-(defn load-pod-metadata [pod-spec {:keys [:version] :as opts}]
+(defn load-pod-metadata [pod-spec {:keys [:version :cache] :as opts}]
   (let [metadata
-        (if-let [cached-metadata (when (qualified-symbol? pod-spec) ; don't cache local pods b/c their namespaces can change
+        (if-let [cached-metadata (when (and version cache)
                                    (load-metadata-from-cache pod-spec opts))]
           cached-metadata
           (load-pod-metadata* pod-spec opts))]
