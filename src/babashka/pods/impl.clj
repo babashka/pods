@@ -378,7 +378,7 @@
         running-pod (run-pod pod-spec opts)
         describe-reply (describe-pod running-pod)
         ops (describe->ops describe-reply)]
-    (future (destroy* (assoc running-pod :ops ops)))
+    (destroy* (assoc running-pod :ops ops))
     describe-reply))
 
 (defn load-pod
