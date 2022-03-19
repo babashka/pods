@@ -2,10 +2,10 @@
   (:require [babashka.pods.impl :as impl]
             [sci.core :as sci]
             [clojure.java.io :as io]
-            [babashka.pods.impl.resolver :as resolver]
-            [clojure.edn :as edn]
-            [clojure.walk :as walk])
-  (:import (java.io DataInputStream PushbackInputStream)))
+            [babashka.pods.impl.resolver :as resolver])
+  (:import (java.io PushbackInputStream File)))
+
+(set! *warn-on-reflection* true)
 
 (defn- process-namespace [ctx {:keys [:name :vars]}]
   (let [env (:env ctx)
@@ -24,7 +24,7 @@
               (string? var-value)
               (sci/eval-string* ctx var-value))))))
 
-(defn metadata-cache-file [pod-spec {:keys [:version]}]
+(defn metadata-cache-file ^File [pod-spec {:keys [:version]}]
   (io/file (resolver/cache-dir {:pod/name pod-spec :pod/version version})
            "metadata.cache"))
 
