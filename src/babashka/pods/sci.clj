@@ -2,7 +2,8 @@
   (:require [babashka.pods.impl :as impl]
             [sci.core :as sci]
             [clojure.java.io :as io]
-            [babashka.pods.impl.resolver :as resolver])
+            [babashka.pods.impl.resolver :as resolver]
+            [babashka.impl.common :as common])
   (:import (java.io PushbackInputStream File)))
 
 (set! *warn-on-reflection* true)
@@ -24,9 +25,16 @@
               (string? var-value)
               (sci/eval-string* ctx var-value))))))
 
-(defn metadata-cache-file ^File [pod-spec {:keys [:version]}]
-  (io/file (resolver/cache-dir {:pod/name pod-spec :pod/version version})
-           "metadata.cache"))
+(defn metadata-cache-file ^File [pod-spec {:keys [:version :path]}]
+  (if version
+    (io/file (resolver/cache-dir {:pod/name pod-spec :pod/version version})
+             "metadata.cache")
+    (let [bb-edn-file (-> @common/bb-edn :file io/file)
+          config-dir (.getParentFile bb-edn-file)
+          cache-dir (io/file config-dir ".babashka")
+          pod-file (-> path io/file .getName)
+          cache-file (io/file cache-dir (str pod-file ".metadata.cache"))]
+      cache-file)))
 
 (defn load-metadata-from-cache [pod-spec opts]
   (let [cache-file (metadata-cache-file pod-spec opts)]
@@ -36,16 +44,16 @@
 
 (defn load-pod-metadata* [pod-spec {:keys [:version :cache] :as opts}]
   (let [metadata (impl/load-pod-metadata pod-spec opts)
-        cache-file (when (and version cache)
-                     (metadata-cache-file pod-spec opts))]
+        cache-file (when cache (metadata-cache-file pod-spec opts))]
     (when cache-file
+      (io/make-parents cache-file)
       (with-open [w (io/output-stream cache-file)]
         (impl/write w metadata)))
     metadata))
 
-(defn load-pod-metadata [pod-spec {:keys [:version :cache] :as opts}]
+(defn load-pod-metadata [pod-spec {:keys [:cache] :as opts}]
   (let [metadata
-        (if-let [cached-metadata (when (and version cache)
+        (if-let [cached-metadata (when cache
                                    (load-metadata-from-cache pod-spec opts))]
           cached-metadata
           (load-pod-metadata* pod-spec opts))]
@@ -55,7 +63,6 @@
           (assoc pod-namespaces ns-sym {:pod-spec pod-spec
                                         :opts (assoc opts :metadata metadata)})))
       {} (get metadata "namespaces"))))
-
 
 (defn load-pod
   ([ctx pod-spec] (load-pod ctx pod-spec nil))
