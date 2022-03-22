@@ -76,33 +76,6 @@ On the JVM:
 
 When calling `load-pod` with a string or vector of strings, the pod is looked up on the local file system (either using the PATH, or using an absolute path). When it is called with a qualified symbol and a version - like `(load-pod 'org.babashka/aws "0.0.5")` then it will be looked up in and downloaded from the [pod-registry](https://github.com/babashka/pod-registry).
 
-### In a babashka project
-
-As of babashka 0.8.0 you can declare the pods your babashka project uses in your `bb.edn` file like so:
-
-```clojure
-:pods {org.babashka/hsqldb {:version "0.1.0"} ; will be downloaded from the babashka pod registry
-       my.local/pod {:path "../pod-my-local/my-pod-binary"
-                     :cache false}} ; optionally disable namespace caching if you're actively working on this pod
-```
-
-Then you can just require the pods in your code like any other clojure lib:
-
-```clojure
-(ns my.project
-  (:require [pod.babashka.hsqldb :as sql]
-            [my.local.pod :as my-pod]))
-
-(def db "jdbc:hsqldb:mem:testdb;sql.syntax_mys=true")
-(sql/execute! db ["create table foo ( foo int );"])
-;;=> [#:next.jdbc{:update-count 0}]
-
-(my-pod/do-a-thing "foo")
-;;=> "something"
-```
-
-The pods will then be loaded on demand when you require them. No need to call `load-pod` explicitly.
-
 ## Sci
 
 To use pods in a [sci](https://github.com/borkdude/sci) based project, see
