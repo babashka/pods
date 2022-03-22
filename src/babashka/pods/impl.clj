@@ -367,11 +367,11 @@
 (defn describe->ops [describe-reply]
   (some->> (get describe-reply "ops") keys (map keyword) set))
 
-(defn describe->metadata [describe-reply]
+(defn describe->metadata [describe-reply resolve-fn]
   (let [format (-> (get describe-reply "format") bytes->string keyword)
         ops (describe->ops describe-reply)
         readers (when (identical? :edn format)
-                  (read-readers describe-reply resolve))]
+                  (read-readers describe-reply resolve-fn))]
     {:format format, :ops ops, :readers readers}))
 
 (defn load-pod-metadata [pod-spec opts]
@@ -394,7 +394,7 @@
 
          reply (or (:metadata opts)
                    (describe-pod running-pod))
-         {:keys [:format :ops :readers]} (describe->metadata reply)
+         {:keys [:format :ops :readers]} (describe->metadata reply resolve)
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
