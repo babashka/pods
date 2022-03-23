@@ -1,0 +1,28 @@
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: clojure:openjdk-11-tools-deps-1.10.3.1087-slim-bullseye
+    working_directory: ~/repo
+    environment:
+      LEIN_ROOT: "true"
+      BABASHKA_PLATFORM: linux
+    resource_class: large
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "deps.edn" }}
+            # fallback to using latest cache if no exact match is found
+            - v1-dependencies-
+      - run: |
+          script/test
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "deps.edn" }}
+workflows:
+  version: 2
+  ci:
+    jobs:
+      - test
