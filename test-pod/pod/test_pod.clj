@@ -270,6 +270,6 @@
 
 (defn -main [& args]
   #_(binding [*out* *err*]
-    (prn :args args))
+      (prn :args args))
   (when (= "true" (System/getenv "BABASHKA_POD"))
     (run-pod (set args))))

@@ -6,7 +6,7 @@
 (defn- unroot-resource [^String path]
   (symbol (.. path
               (substring 1)
-              (replace \/ \. )
+              (replace \/ \.)
               (replace \_ \-))))
 
 (defn- process-namespace [{:keys [:name :vars]}]
