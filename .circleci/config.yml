@@ -12,11 +12,15 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "project.clj" }}-{{ checksum "deps.edn" }}
+            - v1-dependencies-{{ checksum "deps.edn" }}
             # fallback to using latest cache if no exact match is found
             - v1-dependencies-
       - run: |
           script/test
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "deps.edn" }}
 workflows:
   version: 2
   ci:
