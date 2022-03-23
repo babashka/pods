@@ -8,4 +8,4 @@
 (println (-> (hash/sha256 "foobar")
              (codecs/bytes->hex)))
 
-(pods/load-pod 'org.babashka/etaoin) ;; should cause error when version is missing
+(pods/load-pod 'org.babashka/etaoin) ;; should cause error when version & path are missing
