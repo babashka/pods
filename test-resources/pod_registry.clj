@@ -1,6 +1,6 @@
 (require '[babashka.pods :as pods])
 
-(pods/load-pod 'org.babashka/buddy "0.0.1")
+(pods/load-pod 'org.babashka/buddy "0.1.0")
 
 (require '[pod.babashka.buddy.codecs :as codecs]
          '[pod.babashka.buddy.hash :as hash])
