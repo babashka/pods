@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   test:
     docker:
-      - image: circleci/clojure:openjdk-11-lein-2.9.8-bullseye
+      - image: clojure:openjdk-11-tools-deps-1.10.3.1087-slim-bullseye
     working_directory: ~/repo
     environment:
       LEIN_ROOT: "true"
