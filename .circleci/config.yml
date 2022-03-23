@@ -1,0 +1,24 @@
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: circleci/clojure:openjdk-11-lein-2.9.8-bullseye
+    working_directory: ~/repo
+    environment:
+      LEIN_ROOT: "true"
+      BABASHKA_PLATFORM: linux
+    resource_class: large
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}-{{ checksum "deps.edn" }}
+            # fallback to using latest cache if no exact match is found
+            - v1-dependencies-
+      - run: |
+          script/test
+workflows:
+  version: 2
+  ci:
+    jobs:
+      - test
