@@ -248,26 +248,23 @@
 (defn lookup-pod [pod-id]
   (get @pods pod-id))
 
+(defn destroy* [{:keys [:stdin :process :ops]}]
+  (if (contains? ops :shutdown)
+    (do (write stdin
+               {"op" "shutdown"
+                "id" (next-id)})
+        (.waitFor ^Process process))
+    (.destroy ^Process process)))
+
 (defn destroy [pod-id-or-pod]
   (let [pod-id (get-pod-id pod-id-or-pod)]
     (when-let [pod (lookup-pod pod-id)]
-      (if (contains? (:ops pod) :shutdown)
-        (do (write (:stdin pod)
-                   {"op" "shutdown"
-                    "id" (next-id)})
-            (.waitFor ^Process (:process pod)))
-        (.destroy ^Process (:process pod)))
+      (destroy* pod)
       (when-let [rns (:remove-ns pod)]
         (doseq [[ns-name _] (:namespaces pod)]
           (rns ns-name))))
     (swap! pods dissoc pod-id)
     nil))
-
-(def next-pod-id
-  (let [counter (atom 0)]
-    (fn []
-      (let [[o _] (swap-vals! counter inc)]
-        o))))
 
 (def bytes->symbol
   (comp symbol bytes->string))
@@ -310,59 +307,94 @@
                    (let [s (slurp f)]
                      (when (str/ends-with? s "\n")
                        (str/trim s))))]
-        (Integer. s)
+        (Integer/parseInt s)
         (recur)))))
 
 (defn debug [& strs]
   (binding [*out* *err*]
     (println (str/join " " (map pr-str strs)))))
 
+(defn resolve-pod [pod-spec {:keys [:version :path :force] :as opts}]
+  (let [resolved (when (and (qualified-symbol? pod-spec) version)
+                   (resolver/resolve pod-spec version force))
+        opts (if resolved
+               (if-let [extra-opts (:options resolved)]
+                 (merge opts extra-opts)
+                 opts)
+               opts)
+        pod-spec (cond
+                   resolved [(:executable resolved)]
+                   path [path]
+                   (string? pod-spec) [pod-spec]
+                   :else pod-spec)]
+    {:pod-spec pod-spec, :opts opts}))
+
+(defn run-pod [pod-spec {:keys [:transport] :as _opts}]
+  (let [pb (ProcessBuilder. ^java.util.List pod-spec)
+        socket? (identical? :socket transport)
+        _ (if socket?
+            (.inheritIO pb)
+            (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
+        _ (cond-> (doto (.environment pb)
+                    (.put "BABASHKA_POD" "true"))
+                 socket? (.put "BABASHKA_POD_TRANSPORT" "socket"))
+        p (.start pb)
+        port-file (when socket? (port-file (.pid p)))
+        socket-port (when socket? (read-port port-file))
+        [socket stdin stdout]
+        (if socket?
+          (let [^Socket socket
+                (loop []
+                  (if-let [sock (try (create-socket "localhost" socket-port)
+                                     (catch java.net.ConnectException _
+                                       nil))]
+                    sock
+                    (recur)))]
+            [socket
+             (.getOutputStream socket)
+             (PushbackInputStream. (.getInputStream socket))])
+          [nil (.getOutputStream p) (java.io.PushbackInputStream. (.getInputStream p))])]
+    {:process p
+     :socket socket
+     :stdin stdin
+     :stdout stdout}))
+
+(defn describe-pod [{:keys [:stdin :stdout]}]
+  (write stdin {"op" "describe"
+                "id" (next-id)})
+  (read stdout))
+
+(defn describe->ops [describe-reply]
+  (some->> (get describe-reply "ops") keys (map keyword) set))
+
+(defn describe->metadata [describe-reply resolve-fn]
+  (let [format (-> (get describe-reply "format") bytes->string keyword)
+        ops (describe->ops describe-reply)
+        readers (when (identical? :edn format)
+                  (read-readers describe-reply resolve-fn))]
+    {:format format, :ops ops, :readers readers}))
+
+(defn load-pod-metadata [pod-spec opts]
+  (let [{:keys [:pod-spec :opts]} (resolve-pod pod-spec opts)
+        running-pod (run-pod pod-spec opts)
+        describe-reply (describe-pod running-pod)
+        ops (describe->ops describe-reply)]
+    (destroy* (assoc running-pod :ops ops))
+    describe-reply))
+
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
   ([pod-spec opts]
-   (let [{:keys [:version :force]} opts
-         resolved (when (qualified-symbol? pod-spec)
-                    (resolver/resolve pod-spec version force))
-         opts (if resolved
-                (if-let [extra-opts (:options resolved)]
-                  (merge opts extra-opts)
-                  opts)
-                opts)
-         {:keys [:remove-ns :resolve :transport]} opts
-         pod-spec (cond resolved [(:executable resolved)]
-                        (string? pod-spec) [pod-spec]
-                        :else pod-spec)
-         pb (ProcessBuilder. ^java.util.List pod-spec)
-         socket? (identical? :socket transport)
-         _ (if socket?
-             (.inheritIO pb)
-             (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
-         _ (cond-> (doto (.environment pb)
-                     (.put "BABASHKA_POD" "true"))
-             socket? (.put "BABASHKA_POD_TRANSPORT" "socket"))
-         p (.start pb)
-         port-file (when socket? (port-file (.pid p)))
-         socket-port (when socket? (read-port port-file))
-         [socket stdin stdout]
-         (if socket?
-           (let [^Socket socket
-                 (loop []
-                   (if-let [sock (try (create-socket "localhost" socket-port)
-                                      (catch java.net.ConnectException _
-                                        nil))]
-                     sock
-                     (recur)))]
-             [socket
-              (.getOutputStream socket)
-              (PushbackInputStream. (.getInputStream socket))])
-           [nil (.getOutputStream p) (java.io.PushbackInputStream. (.getInputStream p))])
-         _ (write stdin {"op" "describe"
-                         "id" (next-id)})
-         reply (read stdout)
-         format (-> (get reply "format") bytes->string keyword)
-         ops (some->> (get reply "ops") keys (map keyword) set)
-         readers (when (identical? :edn format)
-                   (read-readers reply resolve))
+   (let [{:keys [:pod-spec :opts]} (resolve-pod pod-spec opts)
+         {:keys [:remove-ns :resolve]} opts
+
+         {p :process, stdin :stdin, stdout :stdout, socket :socket
+          :as running-pod}
+         (run-pod pod-spec opts)
+
+         reply (or (:metadata opts)
+                   (describe-pod running-pod))
+         {:keys [:format :ops :readers]} (describe->metadata reply resolve)
          pod {:process p
               :pod-spec pod-spec
               :stdin stdin
