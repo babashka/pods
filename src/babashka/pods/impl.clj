@@ -315,6 +315,11 @@
     (println (str/join " " (map pr-str strs)))))
 
 (defn resolve-pod [pod-spec {:keys [:version :path :force] :as opts}]
+  (when (qualified-symbol? pod-spec)
+    (when (and (not version) (not path))
+      (throw (IllegalArgumentException. "Version or path must be provided")))
+    (when (and version path)
+      (throw (IllegalArgumentException. "You must provide either version or path, not both"))))
   (let [resolved (when (and (qualified-symbol? pod-spec) version)
                    (resolver/resolve pod-spec version force))
         opts (if resolved
