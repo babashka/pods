@@ -128,27 +128,35 @@
   ^java.io.File
   [{pod-name :pod/name
     pod-version :pod/version}]
-  (io/file (or
-            (System/getenv "XDG_CACHE_HOME")
-            (System/getProperty "user.home"))
-           ".babashka"
-           "pods"
-           "repository"
-           (str pod-name)
-           pod-version))
+  (let [base-file
+        (if-let [pods-dir (System/getenv "BABASHKA_PODS_DIR")]
+          (io/file pods-dir)
+          (io/file (or
+                    (System/getenv "XDG_CACHE_HOME")
+                    (System/getProperty "user.home"))
+                   ".babashka"
+                   "pods"))]
+    (io/file base-file
+             "repository"
+             (str pod-name)
+             pod-version)))
 
 (defn data-dir
   ^java.io.File
   [{pod-name :pod/name
     pod-version :pod/version}]
-  (io/file (or
-            (System/getenv "XDG_DATA_HOME")
-            (System/getProperty "user.home"))
-           ".babashka"
-           "pods"
-           "repository"
-           (str pod-name)
-           pod-version))
+  (let [base-file
+        (if-let [pods-dir (System/getenv "BABASHKA_PODS_DIR")]
+          (io/file pods-dir)
+          (io/file (or
+                    (System/getenv "XDG_DATA_HOME")
+                    (System/getProperty "user.home"))
+                   ".babashka"
+                   "pods"))]
+    (io/file base-file
+             "repository"
+             (str pod-name)
+             pod-version)))
 
 (defn sha256 [file]
   (let [buf (byte-array 8192)
