@@ -2,7 +2,8 @@
   (:require [babashka.pods.impl :as impl]
             [sci.core :as sci]
             [clojure.java.io :as io]
-            [babashka.pods.impl.resolver :as resolver])
+            [babashka.pods.impl.resolver :as resolver]
+            [babashka.fs :as fs])
   (:import (java.io PushbackInputStream File)))
 
 (set! *warn-on-reflection* true)
@@ -45,8 +46,9 @@
         cache-file (when cache (metadata-cache-file bb-edn-file pod-spec opts))]
     (when cache-file
       (io/make-parents cache-file)
-      (with-open [w (io/output-stream cache-file)]
-        (impl/write w metadata)))
+      (when (fs/writable? (fs/parent cache-file))
+        (with-open [w (io/output-stream cache-file)]
+          (impl/write w metadata))))
     metadata))
 
 (defn load-pod-metadata
