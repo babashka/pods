@@ -168,7 +168,11 @@
         (loop []
           (let [reply (try (read stdout)
                            (catch java.io.EOFException _
-                             ::EOF))]
+                             ::EOF)
+                           (catch java.net.SocketException e
+                             (if (= "Socket closed" (ex-message e))
+                               ::EOF
+                               (throw e))))]
             (when-not (identical? ::EOF reply)
               (let [id (get reply "id")
                     id    (bytes->string id)
