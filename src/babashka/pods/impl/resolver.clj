@@ -154,7 +154,7 @@
   ^java.io.File
   [{pod-name :pod/name
     pod-version :pod/version}]
-  (io/file @repo-dir
+  (io/file @pods-repo-dir
            (str pod-name)
            pod-version))
 
