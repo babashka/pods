@@ -104,11 +104,20 @@
     (with-open [is (.getInputStream conn)]
       (io/copy is dest))))
 
-(def pod-manifests-dir
+(defn repo-dir []
+  (io/file (if-let [pods-dir (System/getenv "BABASHKA_PODS_DIR")]
+             (io/file pods-dir)
+             (io/file (or
+                       (System/getenv "XDG_DATA_HOME")
+                       (System/getProperty "user.home"))
+                      ".babashka"
+                      "pods"))
+           "repository"))
+
+(def pods-repo-dir
   ;; wrapped in delay for GraalVM native-image
-  (delay (io/file (or (System/getenv "XDG_DATA_HOME")
-                      (System/getProperty "user.home"))
-                  ".babashka" "pods" "repository")))
+  (delay
+   (repo-dir)))
 
 (defn github-url [qsym version]
   (format
@@ -117,7 +126,7 @@
 
 (defn pod-manifest
   [qsym version force?]
-  (let [f (io/file @pod-manifests-dir (str qsym) (str version) "manifest.edn")]
+  (let [f (io/file @pods-repo-dir (str qsym) (str version) "manifest.edn")]
     (if (and (not force?)
              (.exists f))
       (edn/read-string (slurp f))
@@ -145,18 +154,9 @@
   ^java.io.File
   [{pod-name :pod/name
     pod-version :pod/version}]
-  (let [base-file
-        (if-let [pods-dir (System/getenv "BABASHKA_PODS_DIR")]
-          (io/file pods-dir)
-          (io/file (or
-                    (System/getenv "XDG_DATA_HOME")
-                    (System/getProperty "user.home"))
-                   ".babashka"
-                   "pods"))]
-    (io/file base-file
-             "repository"
-             (str pod-name)
-             pod-version)))
+  (io/file @repo-dir
+           (str pod-name)
+           pod-version))
 
 (defn sha256 [file]
   (let [buf (byte-array 8192)
