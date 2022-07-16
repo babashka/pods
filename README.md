@@ -456,7 +456,7 @@ The arguments to `babashka.pods/invoke` are:
 - a pod identifier string derived from the first described namespace.
 - the symbol of the var to invoke
 - the arguments to the var
-- an opts map containing `:handler` containing callback functions: `:success`, `:error` and `:done`
+- an opts map containing `:handlers` containing callback functions: `:success`, `:error` and `:done`
 
 The return value of `babashka.pods/invoke` is a map containing `:result`. When
 not using callbacks, this is the return value from the pod var invocation. When
@@ -482,9 +482,9 @@ callback is only called if no errors were sent by the pod.
 
 In the above example the wrapper function calls the pod identified by
 `"pod.babashka.filewatcher"`. It calls the var
-`pod.babashka.filewatcher/watch*`. In `:on-success` it pulls out received
+`pod.babashka.filewatcher/watch*`. In `:success` it pulls out received
 values, passing them to the user-provided callback. Additionally, it prints any
-errors received from the pod library in `:on-error` to `*err*`.
+errors received from the pod library in `:error` to `*err*`.
 
 A user will then use `pod.babashka.filewatcher/watch` like this:
 
