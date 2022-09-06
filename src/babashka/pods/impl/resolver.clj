@@ -15,10 +15,14 @@
     "x86_64"
     arch))
 
+(defn normalize-os [os]
+  (-> os str/lower-case (str/replace #"\s+" "_")))
+
 (def os
   (delay
-    {:os/name (or (System/getenv "OS_NAME") (System/getProperty "os.name"))
-     :os/arch (let [arch (or (System/getenv "OS_ARCH")
+    {:os/name (or (System/getenv "BABASHKA_PODS_OS_NAME")
+                  (System/getProperty "os.name"))
+     :os/arch (let [arch (or (System/getenv "BABASHKA_PODS_OS_ARCH")
                              (System/getProperty "os.arch"))]
                 (normalize-arch arch))}))
 
@@ -151,7 +155,9 @@
     (io/file base-file
              "repository"
              (str pod-name)
-             pod-version)))
+             pod-version
+             (normalize-os (:os/name @os))
+             (:os/arch @os))))
 
 (defn data-dir
   ^java.io.File
@@ -159,7 +165,9 @@
     pod-version :pod/version}]
   (io/file @pods-repo-dir
            (str pod-name)
-           pod-version))
+           pod-version
+           (normalize-os (:os/name @os))
+           (:os/arch @os)))
 
 (defn sha256 [file]
   (let [buf (byte-array 8192)
