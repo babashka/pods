@@ -390,10 +390,10 @@
     (destroy* (assoc running-pod :ops ops))
     describe-reply))
 
-(defn load-pod-metadata [pod-spec {:keys [:download-only] :as opts}]
-  (let [{:keys [:pod-spec :opts]} (resolve-pod pod-spec opts)]
+(defn load-pod-metadata [unresolved-pod-spec {:keys [:download-only] :as opts}]
+  (let [{:keys [:pod-spec :opts]} (resolve-pod unresolved-pod-spec opts)]
     (if download-only
-      (resolver/warn "Not running pod" pod-spec "to pre-cache metadata because OS and/or arch are different than system")
+      (resolver/warn "Not running pod" unresolved-pod-spec "to pre-cache metadata because OS and/or arch are different than system")
       (run-pod-for-metadata pod-spec opts))))
 
 (defn load-pod
