@@ -15,8 +15,9 @@
     "x86_64"
     arch))
 
-(def os {:os/name (System/getProperty "os.name")
-         :os/arch (let [arch (System/getProperty "os.arch")]
+(def os {:os/name (or (System/getenv "OS_NAME") (System/getProperty "os.name"))
+         :os/arch (let [arch (or (System/getenv "OS_ARCH")
+                                 (System/getProperty "os.arch"))]
                     (normalize-arch arch))})
 
 (defn warn [& strs]
