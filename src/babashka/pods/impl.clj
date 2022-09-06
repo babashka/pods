@@ -383,13 +383,18 @@
                   (read-readers describe-reply resolve-fn))]
     {:format format, :ops ops, :readers readers}))
 
-(defn load-pod-metadata [pod-spec opts]
-  (let [{:keys [:pod-spec :opts]} (resolve-pod pod-spec opts)
-        running-pod (run-pod pod-spec opts)
+(defn run-pod-for-metadata [pod-spec opts]
+  (let [running-pod    (run-pod pod-spec opts)
         describe-reply (describe-pod running-pod)
         ops (describe->ops describe-reply)]
     (destroy* (assoc running-pod :ops ops))
     describe-reply))
+
+(defn load-pod-metadata [pod-spec {:keys [:download-only] :as opts}]
+  (let [{:keys [:pod-spec :opts]} (resolve-pod pod-spec opts)]
+    (if download-only
+      (resolver/warn "Not running pod" pod-spec "to pre-cache metadata because OS and/or arch are different than system")
+      (run-pod-for-metadata pod-spec opts))))
 
 (defn load-pod
   ([pod-spec] (load-pod pod-spec nil))
