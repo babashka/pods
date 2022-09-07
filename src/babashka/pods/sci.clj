@@ -43,7 +43,8 @@
 
 (defn load-pod-metadata* [bb-edn-file pod-spec {:keys [:version :cache] :as opts}]
   (let [metadata (impl/load-pod-metadata pod-spec opts)
-        cache-file (when cache (metadata-cache-file bb-edn-file pod-spec opts))]
+        cache-file (when (and metadata cache)
+                     (metadata-cache-file bb-edn-file pod-spec opts))]
     (when cache-file
       (io/make-parents cache-file)
       (when (fs/writable? (fs/parent cache-file))
