@@ -15,35 +15,42 @@
     "x86_64"
     arch))
 
-(def os {:os/name (System/getProperty "os.name")
-         :os/arch (let [arch (System/getProperty "os.arch")]
-                    (normalize-arch arch))})
+(defn normalize-os [os]
+  (-> os str/lower-case (str/replace #"\s+" "_")))
+
+(def os
+  (delay
+    {:os/name (or (System/getenv "BABASHKA_PODS_OS_NAME")
+                  (System/getProperty "os.name"))
+     :os/arch (let [arch (or (System/getenv "BABASHKA_PODS_OS_ARCH")
+                             (System/getProperty "os.arch"))]
+                (normalize-arch arch))}))
 
 (defn warn [& strs]
   (binding [*out* *err*]
     (apply println strs)))
 
 (defn match-artifacts
-  ([package] (match-artifacts package (:os/arch os)))
+  ([package] (match-artifacts package (:os/arch @os)))
   ([package arch]
    (let [artifacts (:pod/artifacts package)
          res (filter (fn [{os-name :os/name
                            os-arch :os/arch}]
                        (let [os-arch (normalize-arch os-arch)]
-                         (and (re-matches (re-pattern os-name) (:os/name os))
+                         (and (re-matches (re-pattern os-name) (:os/name @os))
                               (re-matches (re-pattern os-arch)
                                           arch))))
                      artifacts)]
      (if (empty? res)
-       (if (and (= "Mac OS X" (:os/name os))
-                (= "aarch64" (:os/arch os)))
+       (if (and (= "Mac OS X" (:os/name @os))
+                (= "aarch64" (:os/arch @os)))
          ;; Rosetta2 fallback on Apple M1 machines
          (match-artifacts package "x86_64")
          (throw (IllegalArgumentException. (format "No executable found for pod %s (%s) and OS %s/%s"
                                                    (:pod/name package)
                                                    (:pod/version package)
-                                                   (:os/name os)
-                                                   (:os/arch os)))))
+                                                   (:os/name @os)
+                                                   (:os/arch @os)))))
        res))))
 
 (defn unzip [{:keys [^java.io.File zip-file
@@ -148,7 +155,9 @@
     (io/file base-file
              "repository"
              (str pod-name)
-             pod-version)))
+             pod-version
+             (normalize-os (:os/name @os))
+             (:os/arch @os))))
 
 (defn data-dir
   ^java.io.File
@@ -156,7 +165,9 @@
     pod-version :pod/version}]
   (io/file @pods-repo-dir
            (str pod-name)
-           pod-version))
+           pod-version
+           (normalize-os (:os/name @os))
+           (:os/arch @os)))
 
 (defn sha256 [file]
   (let [buf (byte-array 8192)
