@@ -74,17 +74,7 @@ On the JVM:
 
 ### Where does the pod come from?
 
-When calling `load-pod` with a string or vector of strings (or declaring it in your `bb.edn`),
-the pod is looked up on the local file system (either using the PATH, or using an absolute path).
-When it is called with a qualified symbol and a version - like `(load-pod 'org.babashka/aws "0.0.5")`
-then it will be looked up in and downloaded from the [pod-registry](https://github.com/babashka/pod-registry).
-
-By default babashka will search for a pod binary matching your system's OS and arch. If you want to download
-pods for a different OS / arch (e.g. for deployment to servers), you can set one or both of the following
-environment variables:
-
-- `BABASHKA_PODS_OS_NAME=Linux` (or `Mac OS X` or any other value returned by Java's `os.name` property)
-- `BABASHKA_PODS_OS_ARCH=aarch64` (or `amd64` or any other value returned by Java's `os.arch` property)
+When calling `load-pod` with a string or vector of strings, the pod is looked up on the local file system (either using the PATH, or using an absolute path). When it is called with a qualified symbol and a version - like `(load-pod 'org.babashka/aws "0.0.5")` then it will be looked up in and downloaded from the [pod-registry](https://github.com/babashka/pod-registry).
 
 ### In a babashka project
 
