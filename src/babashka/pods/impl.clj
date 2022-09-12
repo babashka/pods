@@ -292,7 +292,8 @@
    the socket is connected."
   ^Socket
   [^String hostname ^Integer port]
-  (Socket. hostname port))
+  (doto (Socket. hostname port)
+    (.setTcpNoDelay true)))
 
 (defn close-socket
   "Close the socket, and also closes its input and output streams."
