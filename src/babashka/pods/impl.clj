@@ -219,9 +219,12 @@
                 ;; listening to output synchronous.
                 (when out
                   (binding [*out* out-stream]
-                    (println out)))
-                (when err (binding [*out* err-stream]
-                            (println err)))
+                    (print out)
+                    (.flush ^java.io.Writer out-stream)))
+                (when err
+                  (binding [*out* err-stream]
+                    (print err)
+                    (.flush ^java.io.Writer err-stream)))
                 (when (or value* error? namespace)
                   (cond promise?
                         (deliver chan (cond error? exception
