@@ -41,16 +41,31 @@
       (with-open [r (PushbackInputStream. (io/input-stream cache-file))]
         (impl/read r)))))
 
-(defn load-pod-metadata* [bb-edn-file pod-spec {:keys [:version :cache] :as opts}]
-  (let [metadata (impl/load-pod-metadata pod-spec opts)
-        cache-file (when (and metadata cache)
-                     (metadata-cache-file bb-edn-file pod-spec opts))]
+(defn cache-pod-metadata! [metadata {:keys [:bb-edn-file :pod-name :pod-version]}]
+  (let [cache-file (metadata-cache-file bb-edn-file pod-name
+                                        {:version pod-version})]
     (when cache-file
       (io/make-parents cache-file)
       (when (fs/writable? (fs/parent cache-file))
         (with-open [w (io/output-stream cache-file)]
-          (impl/write w metadata))))
+          (impl/write w metadata))))))
+
+(defn load-pod-metadata* [bb-edn-file pod-spec {:keys [:version :cache] :as opts}]
+  (let [metadata (impl/load-pod-metadata pod-spec opts)]
+    (when (and metadata cache)
+      (cache-pod-metadata! metadata {:bb-edn-file bb-edn-file
+                                     :pod-name pod-spec
+                                     :pod-version version}))
     metadata))
+
+(defn pod-namespaces
+  [pod-name metadata opts]
+  (reduce
+    (fn [pod-namespaces ns]
+      (let [ns-sym (-> ns (get "name") impl/bytes->string symbol)]
+        (assoc pod-namespaces ns-sym {:pod-spec pod-name
+                                      :opts (assoc opts :metadata metadata)})))
+    {} (get metadata "namespaces")))
 
 (defn load-pod-metadata
   ([pod-spec opts] (load-pod-metadata nil pod-spec opts))
@@ -62,12 +77,7 @@
                                                               opts))]
            cached-metadata
            (load-pod-metadata* bb-edn-file pod-spec opts))]
-     (reduce
-       (fn [pod-namespaces ns]
-         (let [ns-sym (-> ns (get "name") impl/bytes->string symbol)]
-           (assoc pod-namespaces ns-sym {:pod-spec pod-spec
-                                         :opts (assoc opts :metadata metadata)})))
-       {} (get metadata "namespaces")))))
+     (pod-namespaces pod-spec metadata opts))))
 
 (defn load-pod
   ([ctx pod-spec] (load-pod ctx pod-spec nil))
@@ -121,6 +131,30 @@
          (process-namespace ctx {:name ns-name :vars vars})))
      (sci/future (impl/processor pod))
      {:pod/id (:pod-id pod)})))
+
+(defn load-pod-from-manifest
+  [manifest {:keys [:bb-edn-file]}]
+  (let [artifacts (resolver/match-artifacts manifest)
+        pod-name (:pod/name manifest)]
+    (when artifacts
+      (let [cdir (resolver/cache-dir manifest)
+            ddir (resolver/data-dir manifest)
+            pod (resolver/install-pod-artifacts
+                  artifacts {:cache-dir cdir
+                             :data-dir ddir
+                             :pod/options (:pod/options manifest)})
+            metadata (impl/run-pod-for-metadata [(:executable pod)] nil)]
+        (let [pod-version (:pod/version manifest)
+              opts {:bb-edn-file bb-edn-file
+                    :pod-name pod-name
+                    :pod-version pod-version}]
+          (cache-pod-metadata! metadata opts)
+          ;; TODO: Support local library pods too w/ a :path key here
+          (pod-namespaces pod-name metadata {:version pod-version}))))))
+
+(defn pod-manifest-file
+  [manifest]
+  (resolver/pod-manifest-file (-> manifest :pod/name symbol) (:pod/version manifest)))
 
 (defn unload-pod
   ([pod-id] (unload-pod pod-id {}))
