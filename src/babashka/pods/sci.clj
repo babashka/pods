@@ -132,7 +132,7 @@
      (sci/future (impl/processor pod))
      {:pod/id (:pod-id pod)})))
 
-(defn load-pod-from-manifest
+(defn load-pod-metadata-from-manifest
   [manifest {:keys [:bb-edn-file]}]
   (let [artifacts (resolver/match-artifacts manifest)
         pod-name (:pod/name manifest)]
@@ -149,7 +149,6 @@
                     :pod-name pod-name
                     :pod-version pod-version}]
           (cache-pod-metadata! metadata opts)
-          ;; TODO: Support local library pods too w/ a :path key here
           (pod-namespaces pod-name metadata {:version pod-version}))))))
 
 (defn pod-manifest-file
