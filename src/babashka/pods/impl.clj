@@ -177,14 +177,17 @@
               (let [id (get reply "id")
                     id    (bytes->string id)
                     value* (find reply "value")
-                    value (some-> value*
-                                  second
-                                  bytes->string
-                                  read-fn)
+                    [exception value] (try (some->> value*
+                                                    second
+                                                    bytes->string
+                                                    read-fn
+                                                    (vector nil))
+                                           (catch Exception e
+                                             [e nil]))
                     status (get reply "status")
                     status (set (map (comp keyword bytes->string) status))
-                    error? (contains? status :error)
-                    done? (or error? (contains? status :done))
+                    error? (or exception (contains? status :error))
+                    done? (or error? exception (contains? status :done))
                     [ex-message ex-data]
                     (when error?
                       [(or (some-> (get reply "ex-message")
@@ -202,8 +205,9 @@
                                    :vars (bencode->vars pod name-str v)}))
                     chan (get @chans id)
                     promise? (instance? clojure.lang.IPending chan)
-                    exception (when (and promise? error?)
-                                (ex-info ex-message ex-data))
+                    exception (or exception
+                                  (when (and promise? error?)
+                                    (ex-info ex-message ex-data)))
                     ;; NOTE: if we need more fine-grained handlers, we will add
                     ;; a :raw handler that will just get the bencode message's raw
                     ;; data
@@ -350,7 +354,7 @@
             (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
         _ (cond-> (doto (.environment pb)
                     (.put "BABASHKA_POD" "true"))
-                 socket? (.put "BABASHKA_POD_TRANSPORT" "socket"))
+            socket? (.put "BABASHKA_POD_TRANSPORT" "socket"))
         p (.start pb)
         port-file (when socket? (port-file (.pid p)))
         socket-port (when socket? (read-port port-file))
