@@ -90,6 +90,10 @@
 (require '[pod.test-pod.loaded2 :as loaded2])
 (def loaded (loaded2/loaded 1))
 
+(def incorrect-edn-response
+  (try (pod.test-pod/incorrect-edn)
+       (catch Exception e (ex-message e))))
+
 (pods/unload-pod pod-id)
 (def successfully-removed (nil? (find-ns 'pod.test-pod)))
 
@@ -115,4 +119,5 @@
  should-be-1
  add-sync-meta
  error-meta
- read-other-tag-meta]
+ read-other-tag-meta
+ incorrect-edn-response]
