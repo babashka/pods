@@ -151,7 +151,8 @@
 (babashka.pods/add-transit-read-handler! \"java.array\"
   into-array)
 
-"}]
+"}
+                                                {"name" "incorrect-edn"}]
                                                dependents)}
                                  {"name" "pod.test-pod.loaded"
                                   "defer" "true"}
@@ -238,7 +239,12 @@
                             (write out
                                    {"status" ["done"]
                                     "id" id
-                                    "value" (write-fn (first args))}))
+                                    "value" (write-fn (first args))})
+                            pod.test-pod/incorrect-edn
+                            (write out
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value" (write-fn {(keyword "foo bar") 1})}))
                           (recur))
                 :shutdown (System/exit 0)
                 :load-ns (let [ns (-> (get message "ns")
