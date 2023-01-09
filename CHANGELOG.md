@@ -3,6 +3,7 @@
 ## Unreleased
 
 - [#63](https://github.com/babashka/pods/issues/63): create directory before un-tarring
+- #59: delete port file on exit
 
 ## v0.2.0
 

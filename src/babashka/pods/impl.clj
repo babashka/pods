@@ -310,7 +310,8 @@
        (catch java.net.SocketException _ nil)))
 
 (defn port-file [pid]
-  (io/file (str ".babashka-pod-" pid ".port")))
+  (doto (io/file (str ".babashka-pod-" pid ".port"))
+    (.deleteOnExit)))
 
 (defn read-port [^java.io.File port-file]
   (loop []
