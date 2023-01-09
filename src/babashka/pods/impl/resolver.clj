@@ -211,7 +211,7 @@
                               (cond (str/ends-with? filename ".zip")
                                     (unzip {:zip-file cache-file
                                             :destination-dir ddir
-                                            :verbose true})
+                                            :verbose false})
                                     (or (str/ends-with? filename ".tgz")
                                         (str/ends-with? filename ".tar.gz"))
                                     (un-tgz cache-file ddir
