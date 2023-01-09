@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- [#63](https://github.com/babashka/pods/issues/63): create directory before un-tarring
+
 ## v0.2.0
 
 - [#61](https://github.com/babashka/pods/issues/61): add transit as explicit JVM dependency

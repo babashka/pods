@@ -91,7 +91,10 @@
                   ^"[Ljava.nio.file.CopyOption;"
                   (into-array
                    [java.nio.file.StandardCopyOption/REPLACE_EXISTING])))
-    (sh "tar" "xf" (.getPath tmp-file) "--directory" (.getPath destination-dir))
+    (.mkdirs destination-dir)
+    (let [res (sh "tar" "xf" (.getPath tmp-file) "--directory" (.getPath destination-dir))]
+      (when-not (zero? (:exit res))
+        (throw (ex-info (:err res) res))))
     (.delete tmp-file)))
 
 (defn make-executable [dest-dir executables verbose?]
@@ -208,7 +211,7 @@
                               (cond (str/ends-with? filename ".zip")
                                     (unzip {:zip-file cache-file
                                             :destination-dir ddir
-                                            :verbose false})
+                                            :verbose true})
                                     (or (str/ends-with? filename ".tgz")
                                         (str/ends-with? filename ".tar.gz"))
                                     (un-tgz cache-file ddir

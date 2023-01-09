@@ -3,3 +3,6 @@
 .lein-failures
 /pom.xml
 .lein-repl-history
+.cache
+.clj-kondo/babashka
+.clj-kondo/rewrite-clj
