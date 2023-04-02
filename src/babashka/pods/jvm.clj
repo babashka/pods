@@ -12,11 +12,12 @@
 (defn- process-namespace [{:keys [:name :vars]}]
   (binding [*ns* (load-string (format "(ns %s) *ns*" name))]
     (doseq [[var-sym v] vars]
+      (when-let [maybe-core (some-> (ns-resolve *ns* var-sym) meta :ns str symbol)]
+        (when (= 'clojure.core maybe-core)
+          (ns-unmap *ns* var-sym)))
       (cond
         (ifn? v)
-        (do
-          (ns-unmap *ns* var-sym)
-          (intern name var-sym v))
+        (intern name var-sym v)
         (string? v)
         (load-string v)))))
 
