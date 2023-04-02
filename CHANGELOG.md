@@ -4,6 +4,7 @@
 
 - [#63](https://github.com/babashka/pods/issues/63): create directory before un-tarring
 - [#59](https://github.com/babashka/pods/issues/59): delete port file on exit
+- [#65](https://github.com/babashka/pods/issues/65), fix warnings when defining var with core name
 
 ## v0.2.0
 
