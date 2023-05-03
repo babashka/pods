@@ -28,6 +28,9 @@
 (defn bytes->string [^"[B" bytes]
   (String. bytes))
 
+(defn bytes->boolean [^"[B" bytes]
+  (boolean bytes))
+
 (defn get-string [m k]
   (-> (get m k)
       bytes->string))
@@ -35,6 +38,10 @@
 (defn get-maybe-string [m k]
   (some-> (get m k)
           bytes->string))
+
+(defn get-maybe-boolean [m k]
+  (some-> (get m k)
+          bytes->boolean))
 
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
@@ -83,12 +90,16 @@
   (let [wh (transit/write-handler tag-fn val-fn)]
     (swap! transit-default-write-handlers assoc *pod-id* wh)))
 
-(defn transit-json-write [pod-id ^String s]
-  (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json {:handlers (get @transit-write-handler-maps pod-id)
-                                        :default-handler (get @transit-default-write-handlers pod-id)})]
-      (transit/write w s)
-      (str baos))))
+(defonce vars-with-metadata-on-args (atom {}))
+
+(defn transit-json-write
+  ([pod-id ^String s metadata-on-args?]
+   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
+     (let [w (transit/writer baos :json (merge {:handlers (get @transit-write-handler-maps pod-id)
+                                                :default-handler (get @transit-default-write-handlers pod-id)}
+                                               (when metadata-on-args? {:transform transit/write-meta})))]
+       (transit/write w s)
+       (str baos)))))
 
 (defn invoke [pod pod-var args opts]
   (let [handlers (:handlers opts)
@@ -98,7 +109,9 @@
         write-fn (case format
                    :edn pr-str
                    :json cheshire/generate-string
-                   :transit+json #(transit-json-write (:pod-id pod) %))
+                   :transit+json #(transit-json-write
+                                   (:pod-id pod) %
+                                   (some #{pod-var} (get @vars-with-metadata-on-args (:pod-id pod)))))
         id (next-id)
         chan (if handlers handlers
                  (promise))
@@ -128,7 +141,10 @@
                          edn/read-string)
            name-sym (if vmeta
                       (with-meta name-sym vmeta)
-                      name-sym)]
+                      name-sym)
+           meta-args? (get-maybe-boolean var "metadata?")]
+       (when meta-args?
+         (swap! vars-with-metadata-on-args update (:pod-id pod) conj sym))
        [name-sym
         (or code
             (fn [& args]
