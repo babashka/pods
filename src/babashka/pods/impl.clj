@@ -108,7 +108,7 @@
         chans (:chans pod)
         write-fn (case format
                    :edn pr-str
-                   :json cheshire/generate-string
+                   :json cheshire/generate-string 
                    :transit+json #(transit-json-write
                                    (:pod-id pod) %
                                    (some #{pod-var} (get @vars-with-metadata-on-args (:pod-id pod)))))
