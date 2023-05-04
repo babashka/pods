@@ -142,7 +142,7 @@
            name-sym (if vmeta
                       (with-meta name-sym vmeta)
                       name-sym)
-           meta-args? (get-maybe-boolean var "metadata?")]
+           meta-args? (get-maybe-boolean var "read-metadata?")]
        (when meta-args?
          (swap! vars-with-metadata-on-args update (:pod-id pod) conj sym))
        [name-sym
