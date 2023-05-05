@@ -376,9 +376,9 @@ nil
 
 #### Metadata
 
-##### From pod to pod client
+**From pod to pod client**
 
-1. Fixed Metadata on vars
+*Fixed Metadata on vars*
 
 Pods may attach metadata to functions and macros by sending data to the pod client
 in a `"meta"` field as part of a `"var"` section. The metadata must be an appropriate
@@ -396,14 +396,14 @@ For example, a pod can define a function called `add`:
             "meta" "{:doc \"arithmetic addition of 2 arguments\" :arglists ([a b])}"}]}]}
 ```
 
-2. Dynamic Metadata
+*Dynamic Metadata*
 
 Pods may send metadata on values returned to the client if metadata encoding is enabled
-for the particular transport used by the pod.
+for the particular transport format used by the pod.
 
-For example, if your pod uses `transit+json` as its format, you can enable metadata
+For example, if your pod uses `:transit+json` as its format, you can enable metadata
 encoding by adding `:transform transit/write-meta` (or whatever transit is aliased to)
-to the optional map passed to `transit\writer`. e.g.:
+to the optional map passed to `transit/writer`. e.g.:
 
 ````clojure
 (transit/writer baos :json {:transform transit/write-meta})
@@ -411,15 +411,16 @@ to the optional map passed to `transit\writer`. e.g.:
 
 ##### From pod client to pod
 
-Currently sending metadata on arguments passed to a function is available only for the
-`transit+json` format and must be explicitly enabled on a per var basis.
+Currently sending metadata on arguments passed to a pod function is available only for the
+`transit+json` format and can be enabled on a per var basis.
 
-For example a pod can enable metadata to be read on arguments for the `round-trip` function:
+A pod can enable metadata to be read on arguments by sending the "read-meta?" field to "true"
+for the var representing that function. For example:
 
 ````clojure
 {:format :transit+json
     :namespaces [{:name "pod.babashka.demo"
-                  :vars [{"name" "round-trip" "read-metadata?" "true"}]}]}
+                  :vars [{"name" "round-trip" "read-meta?" "true"}]}]}
 ````
 
 #### Deferred namespace loading

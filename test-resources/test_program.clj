@@ -84,6 +84,16 @@
       (.isArray (class v)))
     true))
 
+(def round-trip-meta
+  (if (= "transit+json" fmt)
+    (= {:my-meta 2} (meta (pod.test-pod/round-trip-meta (with-meta [2] {:my-meta 2}))))
+    true))
+
+(def round-trip-meta-nested
+  (if (= "transit+json" fmt)
+    (= {:my-meta 3} (meta (first (pod.test-pod/round-trip-meta [(with-meta [3] {:my-meta 3})]))))
+    true))
+
 (require '[pod.test-pod.only-code :as only-code])
 (def should-be-1 (only-code/foo))
 
@@ -116,6 +126,8 @@
  fn-called
  local-date-time
  assoc-string-array
+ round-trip-meta
+ round-trip-meta-nested
  should-be-1
  add-sync-meta
  error-meta

@@ -93,13 +93,13 @@
 (defonce vars-with-metadata (atom {}))
 
 (defn transit-json-write
-  ([pod-id ^String s metadata?]
-   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-     (let [w (transit/writer baos :json (merge {:handlers (get @transit-write-handler-maps pod-id)
-                                                :default-handler (get @transit-default-write-handlers pod-id)}
-                                               (when metadata? {:transform transit/write-meta})))]
-       (transit/write w s)
-       (str baos)))))
+  [pod-id ^String s metadata?]
+  (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
+    (let [w (transit/writer baos :json (merge {:handlers (get @transit-write-handler-maps pod-id)
+                                               :default-handler (get @transit-default-write-handlers pod-id)}
+                                              (when metadata? {:transform transit/write-meta})))]
+      (transit/write w s)
+      (str baos))))
 
 (defn invoke [pod pod-var args opts]
   (let [handlers (:handlers opts)
@@ -111,7 +111,7 @@
                    :json cheshire/generate-string 
                    :transit+json #(transit-json-write
                                    (:pod-id pod) %
-                                   (some #{pod-var} (get @vars-with-metadata (:pod-id pod)))))
+                                   (contains? (get @vars-with-metadata (:pod-id pod)) pod-var)))
         id (next-id)
         chan (if handlers handlers
                  (promise))
@@ -142,9 +142,9 @@
            name-sym (if vmeta
                       (with-meta name-sym vmeta)
                       name-sym)
-           metadata? (get-maybe-boolean var "read-metadata?")]
+           metadata? (get-maybe-boolean var "read-meta?")]
        (when metadata?
-         (swap! vars-with-metadata update (:pod-id pod) conj sym))
+         (swap! vars-with-metadata update (:pod-id pod) #(conj (set %) sym)))
        [name-sym
         (or code
             (fn [& args]
