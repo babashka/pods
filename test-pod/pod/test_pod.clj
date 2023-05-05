@@ -179,7 +179,6 @@
                                      read-string)
                               args (get message "args")
                               args (read-string args)
-                              args1 args
                               args (read-fn args)]
                           (case var
                             pod.test-pod/add-sync
