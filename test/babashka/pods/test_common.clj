@@ -36,6 +36,7 @@
                          true ;; roundtrip string array
                          true ;; roundtrip metadata
                          true ;; roundtrip metadata nested
+                         true ;; dont roundtrip metadata (when arg-meta "false"/ absent)
                          1
                          "add the arguments"
                          nil

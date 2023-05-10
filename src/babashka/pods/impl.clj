@@ -29,7 +29,7 @@
   (String. bytes))
 
 (defn bytes->boolean [^"[B" bytes]
-  (boolean bytes))
+  (= "true" (String. bytes)))
 
 (defn get-string [m k]
   (-> (get m k)
@@ -142,7 +142,7 @@
            name-sym (if vmeta
                       (with-meta name-sym vmeta)
                       name-sym)
-           metadata? (get-maybe-boolean var "read-meta?")]
+           metadata? (get-maybe-boolean var "arg-meta")]
        (when metadata?
          (swap! vars-with-metadata update (:pod-id pod) #(conj (set %) sym)))
        [name-sym

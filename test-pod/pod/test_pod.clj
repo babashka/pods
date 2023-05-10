@@ -137,7 +137,9 @@
                                                  "code" "(defn read-other-tag [x] [x x])"
                                                  "meta" "{:doc \"unread\"}"}
                                                 {"name" "round-trip-meta"
-                                                 "read-meta?" "true"}
+                                                 "arg-meta" "true"}
+                                                {"name" "dont-round-trip-meta"
+                                                 "arg-meta" "false"}
                                                 {"name" "-local-date-time"}
                                                 {"name" "transit-stuff"
                                                  "code" "
@@ -244,6 +246,14 @@
                                     "id" id
                                     "value" "#my/other-tag[1]"})
                             pod.test-pod/round-trip-meta
+                            (write out
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value"
+                                    (case format
+                                      :transit+json (transit-json-write-meta (first args))
+                                      (write-fn (first args)))})
+                            pod.test-pod/dont-round-trip-meta
                             (write out
                                    {"status" ["done"]
                                     "id" id
