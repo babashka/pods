@@ -414,13 +414,13 @@ to the optional map passed to `transit/writer`. e.g.:
 Currently sending metadata on arguments passed to a pod function is available only for the
 `transit+json` format and can be enabled on a per var basis.
 
-A pod can enable metadata to be read on arguments by sending the "read-meta?" field to "true"
+A pod can enable metadata to be read on arguments by sending the "arg-meta" field to "true"
 for the var representing that function. For example:
 
 ````clojure
 {:format :transit+json
     :namespaces [{:name "pod.babashka.demo"
-                  :vars [{"name" "round-trip" "read-meta?" "true"}]}]}
+                  :vars [{"name" "round-trip" "arg-meta" "true"}]}]}
 ````
 
 #### Deferred namespace loading

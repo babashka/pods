@@ -90,8 +90,6 @@
   (let [wh (transit/write-handler tag-fn val-fn)]
     (swap! transit-default-write-handlers assoc *pod-id* wh)))
 
-(defonce vars-with-metadata (atom {}))
-
 (defn transit-json-write
   [pod-id ^String s metadata?]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
@@ -109,9 +107,7 @@
         write-fn (case format
                    :edn pr-str
                    :json cheshire/generate-string 
-                   :transit+json #(transit-json-write
-                                   (:pod-id pod) %
-                                   (contains? (get @vars-with-metadata (:pod-id pod)) pod-var)))
+                   :transit+json #(transit-json-write (:pod-id pod) % (:arg-meta opts)))
         id (next-id)
         chan (if handlers handlers
                  (promise))
@@ -143,12 +139,10 @@
                       (with-meta name-sym vmeta)
                       name-sym)
            metadata? (get-maybe-boolean var "arg-meta")]
-       (when metadata?
-         (swap! vars-with-metadata update (:pod-id pod) #(conj (set %) sym)))
        [name-sym
         (or code
             (fn [& args]
-              (let [res (invoke pod sym args {:async async?})]
+              (let [res (invoke pod sym args {:async async? :arg-meta metadata?})]
                 res)))]))
    vars))
 
