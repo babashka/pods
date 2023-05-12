@@ -376,11 +376,15 @@ nil
 
 #### Metadata
 
+**From pod to pod client**
+
+*Fixed Metadata on vars*
+
 Pods may attach metadata to functions and macros by sending data to the pod client
 in a `"meta"` field as part of a `"var"` section. The metadata must be an appropriate
 map, encoded as an EDN string. This is only applicable to vars in the pod and will be
 ignored if the var refers to Client-side code, since metadata can already be defined
-in those code blocks.
+in those code blocks (see 'Dynamic Metadata' below to enable the encoding of metadata).
 
 For example, a pod can define a function called `add`:
 
@@ -391,6 +395,33 @@ For example, a pod can define a function called `add`:
    "vars" [{"name" "add"
             "meta" "{:doc \"arithmetic addition of 2 arguments\" :arglists ([a b])}"}]}]}
 ```
+
+*Dynamic Metadata*
+
+Pods may send metadata on values returned to the client if metadata encoding is enabled
+for the particular transport format used by the pod.
+
+For example, if your pod uses `:transit+json` as its format, you can enable metadata
+encoding by adding `:transform transit/write-meta` (or whatever transit is aliased to)
+to the optional map passed to `transit/writer`. e.g.:
+
+````clojure
+(transit/writer baos :json {:transform transit/write-meta})
+````
+
+##### From pod client to pod
+
+Currently sending metadata on arguments passed to a pod function is available only for the
+`transit+json` format and can be enabled on a per var basis.
+
+A pod can enable metadata to be read on arguments by sending the "arg-meta" field to "true"
+for the var representing that function. For example:
+
+````clojure
+{:format :transit+json
+    :namespaces [{:name "pod.babashka.demo"
+                  :vars [{"name" "round-trip" "arg-meta" "true"}]}]}
+````
 
 #### Deferred namespace loading
 

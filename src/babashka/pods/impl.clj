@@ -28,6 +28,9 @@
 (defn bytes->string [^"[B" bytes]
   (String. bytes))
 
+(defn bytes->boolean [^"[B" bytes]
+  (= "true" (String. bytes)))
+
 (defn get-string [m k]
   (-> (get m k)
       bytes->string))
@@ -35,6 +38,10 @@
 (defn get-maybe-string [m k]
   (some-> (get m k)
           bytes->string))
+
+(defn get-maybe-boolean [m k]
+  (some-> (get m k)
+          bytes->boolean))
 
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
@@ -83,10 +90,12 @@
   (let [wh (transit/write-handler tag-fn val-fn)]
     (swap! transit-default-write-handlers assoc *pod-id* wh)))
 
-(defn transit-json-write [pod-id ^String s]
+(defn transit-json-write
+  [pod-id ^String s metadata?]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json {:handlers (get @transit-write-handler-maps pod-id)
-                                        :default-handler (get @transit-default-write-handlers pod-id)})]
+    (let [w (transit/writer baos :json (merge {:handlers (get @transit-write-handler-maps pod-id)
+                                               :default-handler (get @transit-default-write-handlers pod-id)}
+                                              (when metadata? {:transform transit/write-meta})))]
       (transit/write w s)
       (str baos))))
 
@@ -97,8 +106,8 @@
         chans (:chans pod)
         write-fn (case format
                    :edn pr-str
-                   :json cheshire/generate-string
-                   :transit+json #(transit-json-write (:pod-id pod) %))
+                   :json cheshire/generate-string 
+                   :transit+json #(transit-json-write (:pod-id pod) % (:arg-meta opts)))
         id (next-id)
         chan (if handlers handlers
                  (promise))
@@ -128,11 +137,12 @@
                          edn/read-string)
            name-sym (if vmeta
                       (with-meta name-sym vmeta)
-                      name-sym)]
+                      name-sym)
+           metadata? (get-maybe-boolean var "arg-meta")]
        [name-sym
         (or code
             (fn [& args]
-              (let [res (invoke pod sym args {:async async?})]
+              (let [res (invoke pod sym args {:async async? :arg-meta metadata?})]
                 res)))]))
    vars))
 
