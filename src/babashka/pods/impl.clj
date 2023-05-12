@@ -93,9 +93,9 @@
 (defn transit-json-write
   [pod-id ^String s metadata?]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json (merge {:handlers (get @transit-write-handler-maps pod-id)
-                                               :default-handler (get @transit-default-write-handlers pod-id)}
-                                              (when metadata? {:transform transit/write-meta})))]
+    (let [w (transit/writer baos :json (cond-> {:handlers (get @transit-write-handler-maps pod-id)
+                                                :default-handler (get @transit-default-write-handlers pod-id)}
+                                         metadata? (assoc :transform transit/write-meta)))]
       (transit/write w s)
       (str baos))))
 
@@ -106,7 +106,7 @@
         chans (:chans pod)
         write-fn (case format
                    :edn pr-str
-                   :json cheshire/generate-string 
+                   :json cheshire/generate-string
                    :transit+json #(transit-json-write (:pod-id pod) % (:arg-meta opts)))
         id (next-id)
         chan (if handlers handlers
