@@ -228,7 +228,7 @@ JSON. It also declares that the pod exposes one namespace,
 
 To encode payloads in EDN use `"edn"` and for Transit JSON use `"transit+json"`.
 
-The pod encodes the above map to bencode and writes it to stdoud. The pod client
+The pod encodes the above map to bencode and writes it to stdout. The pod client
 reads this message from the pod's stdout.
 
 Upon receiving this message, the pod client creates these namespaces and vars.
