@@ -6,3 +6,4 @@
 .cache
 .clj-kondo/babashka
 .clj-kondo/rewrite-clj
+src/scratch.clj
