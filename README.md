@@ -130,7 +130,7 @@ light weight replacement for native interop (JNI, JNA, etc.).
 
 ### Examples
 
-Beyond the already available pods mentioned above, eductional examples of pods
+Beyond the already available pods mentioned above, educational examples of pods
 can be found [here](examples):
 
 - [pod-lispyclouds-sqlite](examples/pod-lispyclouds-sqlite): a pod that
