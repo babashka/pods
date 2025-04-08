@@ -23,7 +23,9 @@
         _ (vreset! ctx-ref ctx)
         ret (sci/binding [sci/out out
                           sci/err err]
-              (sci/eval-string* ctx test-program))]
+              (binding [*out* out
+                        *err* err]
+                (sci/eval-string* ctx test-program)))]
     (assertions out err ret)))
 
 (deftest pod-registry-test

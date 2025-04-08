@@ -84,11 +84,30 @@
       (.isArray (class v)))
     true))
 
+(def round-trip-meta
+  (if (= "transit+json" fmt)
+    (= {:my-meta 2} (meta (pod.test-pod/round-trip-meta (with-meta [2] {:my-meta 2}))))
+    true))
+
+(def round-trip-meta-nested
+  (if (= "transit+json" fmt)
+    (= {:my-meta 3} (meta (first (pod.test-pod/round-trip-meta [(with-meta [3] {:my-meta 3})]))))
+    true))
+
+(def dont-round-trip-meta
+  (if (= "transit+json" fmt)
+    (= nil (meta (pod.test-pod/dont-round-trip-meta (with-meta [2] {:my-meta 2}))))
+    true))
+
 (require '[pod.test-pod.only-code :as only-code])
 (def should-be-1 (only-code/foo))
 
 (require '[pod.test-pod.loaded2 :as loaded2])
 (def loaded (loaded2/loaded 1))
+
+(def incorrect-edn-response
+  (try (pod.test-pod/incorrect-edn)
+       (catch Exception e (ex-message e))))
 
 (pods/unload-pod pod-id)
 (def successfully-removed (nil? (find-ns 'pod.test-pod)))
@@ -112,7 +131,11 @@
  fn-called
  local-date-time
  assoc-string-array
+ round-trip-meta
+ round-trip-meta-nested
+ dont-round-trip-meta
  should-be-1
  add-sync-meta
  error-meta
- read-other-tag-meta]
+ read-other-tag-meta
+ incorrect-edn-response]

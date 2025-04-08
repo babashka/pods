@@ -28,6 +28,9 @@
 (defn bytes->string [^"[B" bytes]
   (String. bytes))
 
+(defn bytes->boolean [^"[B" bytes]
+  (= "true" (String. bytes)))
+
 (defn get-string [m k]
   (-> (get m k)
       bytes->string))
@@ -35,6 +38,10 @@
 (defn get-maybe-string [m k]
   (some-> (get m k)
           bytes->string))
+
+(defn get-maybe-boolean [m k]
+  (some-> (get m k)
+          bytes->boolean))
 
 (defn next-id []
   (str (java.util.UUID/randomUUID)))
@@ -83,10 +90,12 @@
   (let [wh (transit/write-handler tag-fn val-fn)]
     (swap! transit-default-write-handlers assoc *pod-id* wh)))
 
-(defn transit-json-write [pod-id ^String s]
+(defn transit-json-write
+  [pod-id ^String s metadata?]
   (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
-    (let [w (transit/writer baos :json {:handlers (get @transit-write-handler-maps pod-id)
-                                        :default-handler (get @transit-default-write-handlers pod-id)})]
+    (let [w (transit/writer baos :json (cond-> {:handlers (get @transit-write-handler-maps pod-id)
+                                                :default-handler (get @transit-default-write-handlers pod-id)}
+                                         metadata? (assoc :transform transit/write-meta)))]
       (transit/write w s)
       (str baos))))
 
@@ -98,7 +107,7 @@
         write-fn (case format
                    :edn pr-str
                    :json cheshire/generate-string
-                   :transit+json #(transit-json-write (:pod-id pod) %))
+                   :transit+json #(transit-json-write (:pod-id pod) % (:arg-meta opts)))
         id (next-id)
         chan (if handlers handlers
                  (promise))
@@ -128,11 +137,12 @@
                          edn/read-string)
            name-sym (if vmeta
                       (with-meta name-sym vmeta)
-                      name-sym)]
+                      name-sym)
+           metadata? (get-maybe-boolean var "arg-meta")]
        [name-sym
         (or code
             (fn [& args]
-              (let [res (invoke pod sym args {:async async?})]
+              (let [res (invoke pod sym args {:async async? :arg-meta metadata?})]
                 res)))]))
    vars))
 
@@ -177,14 +187,17 @@
               (let [id (get reply "id")
                     id    (bytes->string id)
                     value* (find reply "value")
-                    value (some-> value*
-                                  second
-                                  bytes->string
-                                  read-fn)
+                    [exception value] (try (some->> value*
+                                                    second
+                                                    bytes->string
+                                                    read-fn
+                                                    (vector nil))
+                                           (catch Exception e
+                                             [e nil]))
                     status (get reply "status")
                     status (set (map (comp keyword bytes->string) status))
-                    error? (contains? status :error)
-                    done? (or error? (contains? status :done))
+                    error? (or exception (contains? status :error))
+                    done? (or error? exception (contains? status :done))
                     [ex-message ex-data]
                     (when error?
                       [(or (some-> (get reply "ex-message")
@@ -202,8 +215,9 @@
                                    :vars (bencode->vars pod name-str v)}))
                     chan (get @chans id)
                     promise? (instance? clojure.lang.IPending chan)
-                    exception (when (and promise? error?)
-                                (ex-info ex-message ex-data))
+                    exception (or exception
+                                  (when (and promise? error?)
+                                    (ex-info ex-message ex-data)))
                     ;; NOTE: if we need more fine-grained handlers, we will add
                     ;; a :raw handler that will just get the bencode message's raw
                     ;; data
@@ -306,7 +320,8 @@
        (catch java.net.SocketException _ nil)))
 
 (defn port-file [pid]
-  (io/file (str ".babashka-pod-" pid ".port")))
+  (doto (io/file (str ".babashka-pod-" pid ".port"))
+    (.deleteOnExit)))
 
 (defn read-port [^java.io.File port-file]
   (loop []
@@ -350,7 +365,7 @@
             (.redirectError pb java.lang.ProcessBuilder$Redirect/INHERIT))
         _ (cond-> (doto (.environment pb)
                     (.put "BABASHKA_POD" "true"))
-                 socket? (.put "BABASHKA_POD_TRANSPORT" "socket"))
+            socket? (.put "BABASHKA_POD_TRANSPORT" "socket"))
         p (.start pb)
         port-file (when socket? (port-file (.pid p)))
         socket-port (when socket? (read-port port-file))

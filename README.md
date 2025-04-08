@@ -77,7 +77,7 @@ On the JVM:
 When calling `load-pod` with a string or vector of strings (or declaring it in your `bb.edn`),
 the pod is looked up on the local file system (either using the PATH, or using an absolute path).
 When it is called with a qualified symbol and a version - like `(load-pod 'org.babashka/aws "0.0.5")`
-then it will be looked up in and downloaded from the [pod-registry](https://github.com/babashka/pod-registry).
+then it will be looked up in and downloaded from the [pod-registry](https://github.com/babashka/pod-registry). You can customize the file system location that `load-pod` will use by setting the `BABASHKA_PODS_DIR` environment variable.
 
 By default babashka will search for a pod binary matching your system's OS and arch. If you want to download
 pods for a different OS / arch (e.g. for deployment to servers), you can set one or both of the following
@@ -130,7 +130,7 @@ light weight replacement for native interop (JNI, JNA, etc.).
 
 ### Examples
 
-Beyond the already available pods mentioned above, eductional examples of pods
+Beyond the already available pods mentioned above, educational examples of pods
 can be found [here](examples):
 
 - [pod-lispyclouds-sqlite](examples/pod-lispyclouds-sqlite): a pod that
@@ -228,7 +228,7 @@ JSON. It also declares that the pod exposes one namespace,
 
 To encode payloads in EDN use `"edn"` and for Transit JSON use `"transit+json"`.
 
-The pod encodes the above map to bencode and writes it to stdoud. The pod client
+The pod encodes the above map to bencode and writes it to stdout. The pod client
 reads this message from the pod's stdout.
 
 Upon receiving this message, the pod client creates these namespaces and vars.
@@ -376,11 +376,15 @@ nil
 
 #### Metadata
 
+**From pod to pod client**
+
+*Fixed Metadata on vars*
+
 Pods may attach metadata to functions and macros by sending data to the pod client
 in a `"meta"` field as part of a `"var"` section. The metadata must be an appropriate
 map, encoded as an EDN string. This is only applicable to vars in the pod and will be
 ignored if the var refers to Client-side code, since metadata can already be defined
-in those code blocks.
+in those code blocks (see 'Dynamic Metadata' below to enable the encoding of metadata).
 
 For example, a pod can define a function called `add`:
 
@@ -391,6 +395,33 @@ For example, a pod can define a function called `add`:
    "vars" [{"name" "add"
             "meta" "{:doc \"arithmetic addition of 2 arguments\" :arglists ([a b])}"}]}]}
 ```
+
+*Dynamic Metadata*
+
+Pods may send metadata on values returned to the client if metadata encoding is enabled
+for the particular transport format used by the pod.
+
+For example, if your pod uses `:transit+json` as its format, you can enable metadata
+encoding by adding `:transform transit/write-meta` (or whatever transit is aliased to)
+to the optional map passed to `transit/writer`. e.g.:
+
+````clojure
+(transit/writer baos :json {:transform transit/write-meta})
+````
+
+##### From pod client to pod
+
+Currently sending metadata on arguments passed to a pod function is available only for the
+`transit+json` format and can be enabled on a per var basis.
+
+A pod can enable metadata to be read on arguments by sending the "arg-meta" field to "true"
+for the var representing that function. For example:
+
+````clojure
+{:format :transit+json
+    :namespaces [{:name "pod.babashka.demo"
+                  :vars [{"name" "round-trip" "arg-meta" "true"}]}]}
+````
 
 #### Deferred namespace loading
 

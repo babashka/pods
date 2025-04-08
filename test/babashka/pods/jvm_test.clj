@@ -19,7 +19,7 @@
   (let [out (java.io.StringWriter.)
         err (java.io.StringWriter.)
         ex (binding [*out* out
-                      *err* err]
+                     *err* err]
               (try (load-string
                     pod-registry)
                    (catch Exception e

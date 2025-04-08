@@ -61,6 +61,12 @@
       (transit/write w s)
       (str baos))))
 
+(defn transit-json-write-meta [s]
+  (with-open [baos (java.io.ByteArrayOutputStream. 4096)]
+    (let [w (transit/writer baos :json {:transform transit/write-meta})]
+      (transit/write w s)
+      (str baos))))
+
 (defn run-pod [cli-args]
   (let [format (cond (contains? cli-args "--json") :json
                      (contains? cli-args "--transit+json") :transit+json
@@ -130,6 +136,10 @@
                                                 {"name" "read-other-tag"
                                                  "code" "(defn read-other-tag [x] [x x])"
                                                  "meta" "{:doc \"unread\"}"}
+                                                {"name" "round-trip-meta"
+                                                 "arg-meta" "true"}
+                                                {"name" "dont-round-trip-meta"
+                                                 "arg-meta" "false"}
                                                 {"name" "-local-date-time"}
                                                 {"name" "transit-stuff"
                                                  "code" "
@@ -151,7 +161,8 @@
 (babashka.pods/add-transit-read-handler! \"java.array\"
   into-array)
 
-"}]
+"}
+                                                {"name" "incorrect-edn"}]
                                                dependents)}
                                  {"name" "pod.test-pod.loaded"
                                   "defer" "true"}
@@ -175,70 +186,91 @@
                             pod.test-pod/add-sync
                             (try (let [ret (apply + args)]
                                    (write out
-                                    {"value" (write-fn ret)
-                                     "id" id
-                                     "status" ["done"]}))
+                                          {"value" (write-fn ret)
+                                           "id" id
+                                           "status" ["done"]}))
                                  (catch Exception e
                                    (write out
-                                    {"ex-data" (write-fn {:args args})
-                                     "ex-message" (.getMessage e)
-                                     "status" ["done" "error"]
-                                     "id" id})))
+                                          {"ex-data" (write-fn {:args args})
+                                           "ex-message" (.getMessage e)
+                                           "status" ["done" "error"]
+                                           "id" id})))
                             pod.test-pod/range-stream
                             (let [rng (apply range args)]
                               (doseq [v rng]
                                 (write out
-                                 {"value" (write-fn v)
-                                  "id" id})
+                                       {"value" (write-fn v)
+                                        "id" id})
                                 (Thread/sleep 100))
                               (write out
-                               {"status" ["done"]
-                                "id" id}))
+                                     {"status" ["done"]
+                                      "id" id}))
                             pod.test-pod/assoc
                             (write out
-                             {"value" (write-fn (apply assoc args))
-                              "status" ["done"]
-                              "id" id})
+                                   {"value" (write-fn (apply assoc args))
+                                    "status" ["done"]
+                                    "id" id})
                             pod.test-pod/error
                             (write out
-                             {"ex-data" (write-fn {:args args})
-                              "ex-message" (str "Illegal arguments")
-                              "status" ["done" "error"]
-                              "id" id})
+                                   {"ex-data" (write-fn {:args args})
+                                    "ex-message" (str "Illegal arguments")
+                                    "status" ["done" "error"]
+                                    "id" id})
                             pod.test-pod/print
                             (do (write out
-                                 {"out" (with-out-str (prn args))
-                                  "id" id})
+                                       {"out" (with-out-str (prn args))
+                                        "id" id})
                                 (write out
-                                 {"status" ["done"]
-                                  "id" id}))
+                                       {"status" ["done"]
+                                        "id" id}))
                             pod.test-pod/print-err
                             (do (write out
-                                 {"err" (with-out-str (prn args))
-                                  "id" id})
+                                       {"err" (with-out-str (prn args))
+                                        "id" id})
                                 (write out
-                                 {"status" ["done"]
-                                  "id" id}))
+                                       {"status" ["done"]
+                                        "id" id}))
                             pod.test-pod/return-nil
                             (write out
-                             {"status" ["done"]
-                              "id" id
-                              "value" (write-fn nil)})
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value" (write-fn nil)})
                             pod.test-pod/reader-tag
                             (write out
-                             {"status" ["done"]
-                              "id" id
-                              "value" "#my/tag[1 2 3]"})
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value" "#my/tag[1 2 3]"})
                             pod.test-pod/other-tag
                             (write out
-                             {"status" ["done"]
-                              "id" id
-                              "value" "#my/other-tag[1]"})
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value" "#my/other-tag[1]"})
+                            pod.test-pod/round-trip-meta
+                            (write out
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value"
+                                    (case format
+                                      :transit+json (transit-json-write-meta (first args))
+                                      (write-fn (first args)))})
+                            pod.test-pod/dont-round-trip-meta
+                            (write out
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value"
+                                    (case format
+                                      :transit+json (transit-json-write-meta (first args))
+                                      (write-fn (first args)))})
                             pod.test-pod/-local-date-time
                             (write out
                                    {"status" ["done"]
                                     "id" id
-                                    "value" (write-fn (first args))}))
+                                    "value" (write-fn (first args))})
+                            pod.test-pod/incorrect-edn
+                            (write out
+                                   {"status" ["done"]
+                                    "id" id
+                                    "value" (write-fn {(keyword "foo bar") 1})}))
                           (recur))
                 :shutdown (System/exit 0)
                 :load-ns (let [ns (-> (get message "ns")
@@ -249,20 +281,20 @@
                            (case ns
                              pod.test-pod.loaded
                              (write out
-                              {"status" ["done"]
-                               "id" id
-                               "name" "pod.test-pod.loaded"
-                               "vars" [{"name" "loaded"
-                                        "code" "(defn loaded [x] (inc x))"}]})
+                                    {"status" ["done"]
+                                     "id" id
+                                     "name" "pod.test-pod.loaded"
+                                     "vars" [{"name" "loaded"
+                                              "code" "(defn loaded [x] (inc x))"}]})
                              pod.test-pod.loaded2
                              (write out
-                              {"status" ["done"]
-                               "id" id
-                               "name" "pod.test-pod.loaded2"
-                               "vars" [{"name" "x"
-                                        "code" "(require '[pod.test-pod.loaded :as loaded])"}
-                                       {"name" "loaded"
-                                        "code" "(defn loaded [x] (loaded/loaded x))"}]}))
+                                    {"status" ["done"]
+                                     "id" id
+                                     "name" "pod.test-pod.loaded2"
+                                     "vars" [{"name" "x"
+                                              "code" "(require '[pod.test-pod.loaded :as loaded])"}
+                                             {"name" "loaded"
+                                              "code" "(defn loaded [x] (loaded/loaded x))"}]}))
                            (recur)))))))
       (catch Exception e
         (binding [*out* *err*]
