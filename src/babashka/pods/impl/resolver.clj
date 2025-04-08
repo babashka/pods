@@ -134,9 +134,13 @@
    "https://raw.githubusercontent.com/babashka/pod-registry/master/manifests/%s/%s/manifest.edn"
    qsym version))
 
+(defn pod-manifest-file
+  [qsym version]
+  (io/file @pods-repo-dir (str qsym) (str version) "manifest.edn"))
+
 (defn pod-manifest
   [qsym version force?]
-  (let [f (io/file @pods-repo-dir (str qsym) (str version) "manifest.edn")]
+  (let [f (pod-manifest-file qsym version)]
     (if (and (not force?)
              (.exists f))
       (edn/read-string (slurp f))
@@ -185,41 +189,51 @@
                  (.digest digest))
         (String. "UTF-8"))))
 
+(defn install-pod-artifacts
+  [artifacts {cdir :cache-dir, ddir :data-dir, :keys [:force? :pod/options]}]
+  (let [execs (mapv (fn [artifact]
+                      (let [url (:artifact/url artifact)
+                            file-name (last (str/split url #"/"))
+                            cache-file (io/file cdir file-name)
+                            exe-file-name (:artifact/executable artifact)
+                            executable (io/file ddir exe-file-name)]
+                        (when (or force? (not (.exists executable)))
+                          (warn (format "Downloading pod %s" url))
+                          (download url cache-file false)
+                          (when-let [expected-sha (:artifact/hash artifact)]
+                            (let [sha (sha256 cache-file)]
+                              (when-not (= (str/replace expected-sha #"^sha256:" "")
+                                           sha)
+                                (throw (ex-info (str "Wrong SHA-256 for file" (str cache-file))
+                                                {:sha sha
+                                                 :expected-sha expected-sha})))))
+                          (let [filename (.getName cache-file)]
+                            (cond (str/ends-with? filename ".zip")
+                                  (unzip {:zip-file cache-file
+                                          :destination-dir ddir
+                                          :verbose false})
+                                  (or (str/ends-with? filename ".tgz")
+                                      (str/ends-with? filename ".tar.gz"))
+                                  (un-tgz cache-file ddir
+                                          false))
+                            (.delete cache-file))
+                          (make-executable ddir [exe-file-name] false)
+                          (warn (format "Successfully installed pod %s" exe-file-name))
+                          (io/file ddir exe-file-name))
+                        (io/file ddir exe-file-name)))
+                    artifacts)]
+      {:executable (.getAbsolutePath ^java.io.File (first execs))
+       :options options}))
+
 (defn resolve [qsym version force?]
   (when-not (string? version)
     (throw (IllegalArgumentException. "Version must be provided for resolving from pod registry!")))
   (when-let [manifest (pod-manifest qsym version force?)]
-    (let [artifacts (match-artifacts manifest)
-          cdir (cache-dir manifest)
+    (let [cdir (cache-dir manifest)
           ddir (data-dir manifest)
-          execs (mapv (fn [artifact]
-                        (let [url (:artifact/url artifact)
-                              file-name (last (str/split url #"/"))
-                              cache-file (io/file cdir file-name)
-                              executable (io/file ddir (:artifact/executable artifact))]
-                          (when (or force? (not (.exists executable)))
-                            (warn (format "Downloading pod %s (%s)" qsym version))
-                            (download url cache-file false)
-                            (when-let [expected-sha (:artifact/hash artifact)]
-                              (let [sha (sha256 cache-file)]
-                                (when-not (= (str/replace expected-sha #"^sha256:" "")
-                                             sha)
-                                  (throw (ex-info (str "Wrong SHA-256 for file" (str cache-file))
-                                                  {:sha sha
-                                                   :expected-sha expected-sha})))))
-                            (let [filename (.getName cache-file)]
-                              (cond (str/ends-with? filename ".zip")
-                                    (unzip {:zip-file cache-file
-                                            :destination-dir ddir
-                                            :verbose false})
-                                    (or (str/ends-with? filename ".tgz")
-                                        (str/ends-with? filename ".tar.gz"))
-                                    (un-tgz cache-file ddir
-                                            false))
-                              (.delete cache-file))
-                            (make-executable ddir [(:artifact/executable artifact)] false)
-                            (warn (format "Successfully installed pod %s (%s)" qsym version))
-                            (io/file ddir (:artifact/executable artifact)))
-                          (io/file ddir (:artifact/executable artifact)))) artifacts)]
-      {:executable (.getAbsolutePath ^java.io.File (first execs))
-       :options (:pod/options manifest)})))
+          artifacts (match-artifacts manifest)
+          pod-options (:pod/options manifest)]
+      (install-pod-artifacts artifacts {:cache-dir cdir
+                                        :data-dir ddir
+                                        :force? force?
+                                        :pod/options pod-options}))))
