@@ -172,7 +172,18 @@
                          (catch Exception e
                            (binding [*out* *err*]
                              (println "Cannot read Transit JSON: " (pr-str s))
-                             (throw e))))))]
+                             (throw e))))))
+
+        throw-all (fn [e]
+                    (doseq [[_ chan] (first (reset-vals! (:chans pod) {}))
+                            :let [promise? (instance? clojure.lang.IPending chan)
+                                  {error-handler :error} (when (map? chan) chan)]]
+                      (cond promise?
+                            (deliver chan e)
+                            error-handler
+                            (error-handler {:ex-message (ex-message e)
+                                            :ex-data (ex-data e)}))))]
+
     (binding [*pod-id* (:pod-id pod)]
       (try
         (loop []
@@ -255,7 +266,9 @@
                   (when done-handler
                     (done-handler))))
               (recur))))
+        (throw-all (ex-info "Pod quit unexpectedly" {}))
         (catch Exception e
+          (throw-all e)
           (binding [*out* *err* #_err-stream]
             (prn e)))))))
 
