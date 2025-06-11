@@ -118,6 +118,8 @@
                                 [{"name" "pod.test-pod"
                                   "vars" (into [{"name" "add-sync"
                                                  "meta" "{:doc \"add the arguments\"}"}
+                                                {"name" "exit-1"
+                                                 "meta" "{:doc \"simulate accidentally exit with code 1\"}"}
                                                 {"name" "range-stream"
                                                  "async" "true"}
                                                 {"name" "assoc"}
@@ -183,6 +185,8 @@
                               args (read-string args)
                               args (read-fn args)]
                           (case var
+                            pod.test-pod/exit-1
+                            (System/exit 1)
                             pod.test-pod/add-sync
                             (try (let [ret (apply + args)]
                                    (write out
