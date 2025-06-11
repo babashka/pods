@@ -260,6 +260,8 @@
                         (and error? error-handler)
                         (error-handler {:ex-message ex-message
                                         :ex-data ex-data})))
+                (when (or done? error?)
+                  (swap! chans dissoc id))
                 (when (and done? (not error?))
                   (when promise?
                     (deliver chan nil))
