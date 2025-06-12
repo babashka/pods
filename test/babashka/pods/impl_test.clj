@@ -1,6 +1,7 @@
 (ns babashka.pods.impl-test
-  (:require [clojure.test :refer :all]
-            [babashka.pods.impl :refer :all]))
+  (:require
+   [babashka.pods.impl :refer [invoke load-pod processor]]
+   [clojure.test :refer [deftest is testing]]))
 
 (deftest load-pod-test
   (testing "resolve fn gets called when pod has EDN data readers"
@@ -24,6 +25,6 @@
           _ (future (processor pod))]
       (try (invoke pod 'pod.test-pod/exit-1 [] {})
            (catch Throwable e
-             (is (= "EOF" (ex-message e)))))
+             (is (= "Pod quit unexpectedly" (ex-message e)))))
       (is (empty? @(:chans pod)))
       (.destroy ^Process (:process pod)))))
