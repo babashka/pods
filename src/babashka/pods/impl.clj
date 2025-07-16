@@ -316,7 +316,7 @@
         name-sym (symbol name-str)
         vars (get namespace "vars")
         vars (bencode->vars pod name-str vars)
-        defer? (some-> namespace (get-maybe-string "defer") (= "true"))]
+        defer? (= "true" (some-> namespace (get-maybe-string "defer")))]
     [name-sym vars defer?]))
 
 (defn create-socket
