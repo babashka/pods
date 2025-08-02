@@ -146,6 +146,11 @@
                 res)))]))
    vars))
 
+(def pods (atom {}))
+
+(defn lookup-pod [pod-id]
+  (get @pods pod-id))
+
 (defn processor [pod]
   (let [stdout (:stdout pod)
         format (:format pod)
@@ -175,14 +180,17 @@
                              (throw e))))))
 
         throw-all (fn [e]
-                    (doseq [[_ chan] (first (reset-vals! (:chans pod) {}))
-                            :let [promise? (instance? clojure.lang.IPending chan)
-                                  {error-handler :error} (when (map? chan) chan)]]
-                      (cond promise?
-                            (deliver chan e)
-                            error-handler
-                            (error-handler {:ex-message (ex-message e)
-                                            :ex-data (ex-data e)}))))]
+                    (when
+                        ;; check if pod wasn't destroyed yet
+                        (lookup-pod (:pod-id pod))
+                      (doseq [[_ chan] (first (reset-vals! (:chans pod) {}))
+                              :let [promise? (instance? clojure.lang.IPending chan)
+                                    {error-handler :error} (when (map? chan) chan)]]
+                        (cond promise?
+                              (deliver chan e)
+                              error-handler
+                              (error-handler {:ex-message (ex-message e)
+                                              :ex-data (ex-data e)})))))]
 
     (binding [*pod-id* (:pod-id pod)]
       (try
@@ -274,15 +282,10 @@
           (binding [*out* *err* #_err-stream]
             (prn e)))))))
 
-(def pods (atom {}))
-
 (defn get-pod-id [x]
   (if (map? x)
     (:pod/id x)
     x))
-
-(defn lookup-pod [pod-id]
-  (get @pods pod-id))
 
 (defn destroy* [{:keys [:stdin :process :ops]}]
   (if (contains? ops :shutdown)
@@ -294,12 +297,15 @@
 
 (defn destroy [pod-id-or-pod]
   (let [pod-id (get-pod-id pod-id-or-pod)]
-    (when-let [pod (lookup-pod pod-id)]
-      (destroy* pod)
-      (when-let [rns (:remove-ns pod)]
-        (doseq [[ns-name _] (:namespaces pod)]
-          (rns ns-name))))
-    (swap! pods dissoc pod-id)
+    (if-let [pod (lookup-pod pod-id)]
+      (do
+        ;; unregister pod to signal pod is being destroyed
+        (swap! pods dissoc pod-id)
+        (destroy* pod)
+        (when-let [rns (:remove-ns pod)]
+          (doseq [[ns-name _] (:namespaces pod)]
+            (rns ns-name))))
+      (swap! pods dissoc pod-id))
     nil))
 
 (def bytes->symbol
